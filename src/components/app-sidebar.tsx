@@ -1,7 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { FileSignature, Calendar, GraduationCap, Hammer, Plus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useState, useEffect } from "react";
 
@@ -25,22 +23,8 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (p: string) => currentPath === p || currentPath.startsWith(p + "/");
 
-  const { data: profile } = useQuery({
-    queryKey: ["profile-sidebar"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("nom, entreprise, email")
-        .eq("id", u.user.id)
-        .maybeSingle();
-      return data;
-    },
-  });
-
   const collapsed = !open && !isMobile;
-  const nomAffiche = profile?.nom || profile?.email || "Artisan";
+  const nomAffiche = "Artisan";
   const inits = initiales(nomAffiche);
 
   return (

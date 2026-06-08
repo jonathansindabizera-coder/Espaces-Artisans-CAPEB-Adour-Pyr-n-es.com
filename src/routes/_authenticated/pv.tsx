@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useMemo, useState } from "react";
+import {
+  loadClients, loadChantiers, addClient, addChantier,
+  updateChantierStatut, notifyUpdate, DATA_EVENT,
+  type Client, type Chantier, type StatutValue,
+} from "@/lib/local-data";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,18 +53,6 @@ const STATUTS = [
   { value: "termine",          label: "Terminé",          dotColor: "#1E8E55", chipBg: "#E7F4EC", chipColor: "#15693E" },
 ] as const;
 
-type StatutValue = (typeof STATUTS)[number]["value"];
-
-type Chantier = {
-  id: string;
-  client_id: string;
-  nature_travaux: string;
-  montant_estime: number | null;
-  duree_estimee: string | null;
-  statut: StatutValue;
-  date_creation: string;
-};
-type Client = { id: string; nom: string; email: string | null; telephone: string | null; adresse: string | null };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const AVATAR_COLORS = ["#C30016","#2563C9","#7B2D8E","#0E7C66","#B45309","#D97706","#1D4ED8","#059669"];
@@ -82,41 +73,21 @@ function cityFromAdresse(adresse: string | null): string {
 }
 
 // ── PvPage ────────────────────────────────────────────────────────────────────
+function loadAll() {
+  return { clients: loadClients(), chantiers: loadChantiers() };
+}
+
 function PvPage() {
-  const qc = useQueryClient();
   const [openNew, setOpenNew] = useState(false);
   const [openDossier, setOpenDossier] = useState<{ chantier: Chantier; client: Client } | null>(null);
   const [openPv, setOpenPv] = useState<{ chantier: Chantier; client: Client } | null>(null);
+  const [{ clients, chantiers }, setData] = useState(loadAll);
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("*").order("nom");
-      if (error) throw error;
-      return data as Client[];
-    },
-  });
-
-  const { data: chantiers = [] } = useQuery({
-    queryKey: ["chantiers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chantiers")
-        .select("*")
-        .order("date_creation", { ascending: false });
-      if (error) throw error;
-      return data as Chantier[];
-    },
-  });
-
-  const updateStatut = useMutation({
-    mutationFn: async ({ id, statut }: { id: string; statut: StatutValue }) => {
-      const { error } = await supabase.from("chantiers").update({ statut }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["chantiers"] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
+  useEffect(() => {
+    const refresh = () => setData(loadAll());
+    window.addEventListener(DATA_EVENT, refresh);
+    return () => window.removeEventListener(DATA_EVENT, refresh);
+  }, []);
 
   const stats = useMemo(() => {
     const enAttente = chantiers.filter(c => ["devis_a_faire","devis_envoye"].includes(c.statut)).length;
@@ -135,7 +106,8 @@ function PvPage() {
     const newStatut = String(over.id) as StatutValue;
     const ch = chantiers.find(c => c.id === id);
     if (!ch || ch.statut === newStatut) return;
-    updateStatut.mutate({ id, statut: newStatut });
+    updateChantierStatut(id, newStatut);
+    setData(loadAll());
   };
 
   return (
@@ -400,7 +372,6 @@ function DraggableCard({
 
 // ── NouveauDossierDialog ──────────────────────────────────────────────────────
 function NouveauDossierDialog({ onClose, clients }: { onClose: () => void; clients: Client[] }) {
-  const qc = useQueryClient();
   const [clientChoice, setClientChoice] = useState<string>("__new__");
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
@@ -424,36 +395,27 @@ function NouveauDossierDialog({ onClose, clients }: { onClose: () => void; clien
     }
   };
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Session expirée — merci de te reconnecter.");
-
       let clientId: string;
       if (isNew) {
-        const { data: client, error: clErr } = await supabase
-          .from("clients")
-          .insert({ user_id: u.user.id, nom, email: email || null, telephone: telephone || null, adresse: adresse || null })
-          .select().single();
-        if (clErr) throw clErr;
-        clientId = client.id;
+        const c = addClient({ nom, email: email || null, telephone: telephone || null, adresse: adresse || null });
+        clientId = c.id;
       } else {
         if (!selectedClient) throw new Error("Client introuvable");
         clientId = selectedClient.id;
       }
-
-      const { error: chErr } = await supabase.from("chantiers").insert({
-        user_id: u.user.id, client_id: clientId, nature_travaux: nature,
+      addChantier({
+        client_id: clientId,
+        nature_travaux: nature,
         montant_estime: montant ? Number(montant) : null,
-        duree_estimee: duree || null, statut: "devis_a_faire",
+        duree_estimee: duree || null,
+        statut: "devis_a_faire",
       });
-      if (chErr) throw chErr;
-
+      notifyUpdate();
       toast.success("Nouveau dossier créé");
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["chantiers"] });
       onClose();
     } catch (err) {
       toast.error((err as Error).message);

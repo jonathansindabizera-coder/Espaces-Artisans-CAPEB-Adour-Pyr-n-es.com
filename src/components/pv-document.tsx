@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
+import { updateChantierStatut, notifyUpdate } from "@/lib/local-data";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,23 +73,9 @@ export function PvDocumentDialog({
   chantier: Chantier;
   client: Client;
 }) {
-  const qc = useQueryClient();
   const today   = new Date().toISOString().slice(0, 10);
   const todayFr = toFrDate(today);
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile-pv"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("nom, entreprise, email, adresse")
-        .eq("id", u.user.id)
-        .maybeSingle();
-      return data;
-    },
-  });
+  const profile = null;
 
   const [typeReception, setType]   = useState<"sans_reserve" | "avec_reserve">("sans_reserve");
   const [dateEffet, setDateEffet]   = useState(today);
@@ -142,12 +128,9 @@ export function PvDocumentDialog({
 
   const finaliser = useMutation({
     mutationFn: async () => {
-      // 1. Mise à jour statut chantier (graceful si Supabase absent)
-      try {
-        await supabase.from("chantiers").update({ statut: "termine" }).eq("id", chantier.id);
-      } catch (e) {
-        console.warn("[PV] Supabase non disponible — statut non mis à jour:", e);
-      }
+      // 1. Mise à jour statut chantier en local
+      updateChantierStatut(chantier.id, "termine");
+      notifyUpdate();
 
       // 2. Générer + télécharger le PDF
       const doc      = buildPdf();
