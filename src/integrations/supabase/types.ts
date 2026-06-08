@@ -124,6 +124,104 @@ export type Database = {
           },
         ]
       }
+      formations: {
+        Row: {
+          id: string
+          external_id: string
+          titre: string
+          lieu: string | null
+          theme: string | null
+          date_debut: string | null
+          duree_texte: string | null
+          description: string | null
+          url_programme_pdf: string | null
+          url_ics: string
+          date_maj: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          external_id: string
+          titre: string
+          lieu?: string | null
+          theme?: string | null
+          date_debut?: string | null
+          duree_texte?: string | null
+          description?: string | null
+          url_programme_pdf?: string | null
+          url_ics: string
+          date_maj?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          external_id?: string
+          titre?: string
+          lieu?: string | null
+          theme?: string | null
+          date_debut?: string | null
+          duree_texte?: string | null
+          description?: string | null
+          url_programme_pdf?: string | null
+          url_ics?: string
+          date_maj?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      inscriptions_formation: {
+        Row: {
+          id: string
+          formation_id: string
+          user_id: string
+          artisan_nom: string
+          artisan_entreprise: string
+          artisan_email: string
+          artisan_telephone: string
+          nb_participants: number
+          noms_participants: string | null
+          statut: string
+          date_demande: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          formation_id: string
+          user_id: string
+          artisan_nom?: string
+          artisan_entreprise?: string
+          artisan_email?: string
+          artisan_telephone?: string
+          nb_participants?: number
+          noms_participants?: string | null
+          statut?: string
+          date_demande?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          formation_id?: string
+          user_id?: string
+          artisan_nom?: string
+          artisan_entreprise?: string
+          artisan_email?: string
+          artisan_telephone?: string
+          nb_participants?: number
+          noms_participants?: string | null
+          statut?: string
+          date_demande?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inscriptions_formation_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
