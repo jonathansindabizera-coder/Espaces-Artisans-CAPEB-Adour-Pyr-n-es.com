@@ -209,6 +209,20 @@ function BandeauCout() {
 // ── Carte contact juriste ─────────────────────────────────────────────────────
 
 function JuristeCard() {
+  const profil = loadProfilEntreprise();
+
+  const mailtoContact = `mailto:nicolas.souard@capeb-adour-pyrenees.fr?subject=${encodeURIComponent(
+    "Demande d'accompagnement RH/juridique",
+  )}&body=${encodeURIComponent(
+    `Bonjour,\n\nEntreprise : ${profil.nom || "—"}\nSIRET : ${profil.siret || "—"}\n\nMerci de me contacter pour une question RH/juridique.\n\nCordialement.`,
+  )}`;
+
+  const mailtoRdv = `mailto:nicolas.souard@capeb-adour-pyrenees.fr?subject=${encodeURIComponent(
+    "Demande de rendez-vous",
+  )}&body=${encodeURIComponent(
+    `Bonjour,\n\nEntreprise : ${profil.nom || "—"}\nSIRET : ${profil.siret || "—"}\n\nDemande de rendez-vous.\n\nCréneaux souhaités : \n\nCordialement.`,
+  )}`;
+
   return (
     <div
       className="rounded-[14px] p-5 text-white"
@@ -220,7 +234,7 @@ function JuristeCard() {
         </div>
         <div>
           <div className="font-display text-lg font-bold tracking-wide">Service Juridique CAPEB</div>
-          <div className="text-white/75 text-sm">CAPEB Adour-Pyrénées</div>
+          <div className="text-white/75 text-sm">Nicolas Souard — CAPEB Adour-Pyrénées</div>
         </div>
       </div>
       <p className="text-sm text-white/85 mb-5 leading-relaxed">
@@ -229,14 +243,14 @@ function JuristeCard() {
       </p>
       <div className="flex flex-wrap gap-2">
         <a
-          href="tel:+33559000000"
+          href="tel:+33562343008"
           className="flex items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold transition-colors bg-white text-[#E2001A]"
         >
           <Phone className="h-4 w-4" />
-          Appeler
+          05 62 34 30 08
         </a>
         <a
-          href="mailto:juriste@capeb-adour-pyrenees.fr"
+          href={mailtoContact}
           className="flex items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold transition-colors"
           style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)" }}
         >
@@ -244,9 +258,7 @@ function JuristeCard() {
           Envoyer un email
         </a>
         <a
-          href="https://exemple-rdv-capeb.fr"
-          target="_blank"
-          rel="noopener noreferrer"
+          href={mailtoRdv}
           className="flex items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold transition-colors"
           style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)" }}
         >

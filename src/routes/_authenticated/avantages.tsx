@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
 import {
   Gift, ShoppingCart, Truck, Shield, Landmark, Zap, Phone,
-  Package, Monitor, Users, ExternalLink, Tag, PhoneCall, FileSearch,
-  Plus, Pencil, X, ChevronDown, ChevronUp, Copy, Check, Mail,
+  Package, Monitor, Users, ExternalLink, Tag, PhoneCall,
+  Plus, Pencil, X, ChevronDown, ChevronUp, Copy, Check,
   ToggleLeft, ToggleRight, Trash2,
 } from "lucide-react";
 import {
@@ -48,7 +48,7 @@ const AVANTAGES_EXEMPLES: AvantageCapeb[] = [
     description: "Tarifs préférentiels sur le carburant professionnel et l'entretien de vos véhicules.",
     economie_min_pct: null,
     economie_max_pct: null,
-    type_action: "comparatif_factures",
+    type_action: "demande_rappel",
     action_valeur: "",
     partenaire_nom: null,
     conditions: "Selon le volume et le prestataire retenu par la CAPEB.",
@@ -90,7 +90,7 @@ const AVANTAGES_EXEMPLES: AvantageCapeb[] = [
     description: "Remises sur vos achats courants : quincaillerie, consommables, EPI, petit outillage.",
     economie_min_pct: 10,
     economie_max_pct: 25,
-    type_action: "comparatif_factures",
+    type_action: "demande_rappel",
     action_valeur: "",
     partenaire_nom: null,
     conditions: "Selon le fournisseur, le volume et la période d'achat.",
@@ -115,7 +115,7 @@ const AVANTAGES_EXEMPLES: AvantageCapeb[] = [
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const EMAIL_CAPEB = "avantages@capeb-adour-pyrenees.fr";
+const EMAIL_RAPPEL = "frederic.laplace@capeb-adour-pyrenees.fr";
 
 const CATEGORIES_LIST = [
   "Centrale d'achat", "Véhicules", "Assurance", "Banque & financement",
@@ -154,26 +154,10 @@ function fmt(n: number): string {
 type Profil = ReturnType<typeof loadProfilEntreprise>;
 
 function buildMailtoRappel(profil: Profil, avantage: AvantageCapeb): string {
-  return `mailto:${EMAIL_CAPEB}?subject=${encodeURIComponent(
-    `Demande de rappel — ${avantage.titre}`,
+  return `mailto:${EMAIL_RAPPEL}?subject=${encodeURIComponent(
+    "Demande de rappel - avantage CAPEB",
   )}&body=${encodeURIComponent(
     `Bonjour,\n\nEntreprise : ${profil.nom || "—"}\nSIRET : ${profil.siret || "—"}\n\nJe souhaite être rappelé(e) concernant l'avantage adhérent "${avantage.titre}".\n\nMerci.`,
-  )}`;
-}
-
-function buildMailtoComparatif(profil: Profil, avantage: AvantageCapeb): string {
-  return `mailto:${EMAIL_CAPEB}?subject=${encodeURIComponent(
-    `Comparatif tarifaire — ${avantage.titre}`,
-  )}&body=${encodeURIComponent(
-    `Bonjour,\n\nEntreprise : ${profil.nom || "—"}\nSIRET : ${profil.siret || "—"}\n\nDemande de comparatif pour "${avantage.titre}".\nJe joindrai 2 à 3 factures récentes.\n\nMerci.`,
-  )}`;
-}
-
-function buildMailtoGeneral(profil: Profil): string {
-  return `mailto:${EMAIL_CAPEB}?subject=${encodeURIComponent(
-    "Demande de comparatif tarifaire — Avantages CAPEB",
-  )}&body=${encodeURIComponent(
-    `Bonjour,\n\nEntreprise : ${profil.nom || "—"}\nSIRET : ${profil.siret || "—"}\n\nDemande de comparatif tarifaire — merci de joindre 2 à 3 factures récentes.\n\nMerci.`,
   )}`;
 }
 
@@ -240,9 +224,6 @@ function AvantagesPage() {
           Gérer les avantages
         </button>
       </div>
-
-      {/* ── Bloc comparatif gratuit ── */}
-      <BlocComparatif profil={profil} />
 
       {/* ── Filtres catégories ── */}
       <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
@@ -312,7 +293,7 @@ function AvantagesPage() {
               ? <ChevronUp className="h-5 w-5 shrink-0" style={{ color: "#8B847D" }} />
               : <ChevronDown className="h-5 w-5 shrink-0" style={{ color: "#8B847D" }} />}
           </button>
-          {showEstimateur && <EstimateurSection avantages={chiffrables} profil={profil} />}
+          {showEstimateur && <EstimateurSection avantages={chiffrables} />}
         </div>
       )}
 
@@ -320,46 +301,6 @@ function AvantagesPage() {
       {showAdmin && (
         <AdminPanel onClose={() => { setShowAdmin(false); setAvantages(loadAvantages()); }} />
       )}
-    </div>
-  );
-}
-
-// ── Bloc comparatif gratuit ───────────────────────────────────────────────────
-
-function BlocComparatif({ profil }: { profil: Profil }) {
-  return (
-    <div
-      className="rounded-[16px] p-5"
-      style={{
-        background: "linear-gradient(135deg, #FEF2F2 0%, #FFF7F7 100%)",
-        border: "2px solid rgba(226,0,26,.18)",
-      }}
-    >
-      <div className="flex flex-wrap items-start gap-4">
-        <div
-          className="flex shrink-0 items-center justify-center rounded-xl"
-          style={{ width: 44, height: 44, background: "#E2001A" }}
-        >
-          <FileSearch className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-display text-lg font-bold" style={{ color: "#1A1714" }}>
-            Comparatif tarifaire gratuit et sans engagement
-          </h2>
-          <p className="text-sm mt-1 leading-relaxed" style={{ color: "#4A453F" }}>
-            Envoyez 2 à 3 factures récentes (carburant, fournitures, assurance…) et recevez une
-            comparaison tarifaire réelle avec les offres CAPEB. Aucune obligation.
-          </p>
-          <a
-            href={buildMailtoGeneral(profil)}
-            className="inline-flex items-center gap-2 mt-3 rounded-[10px] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: "#E2001A" }}
-          >
-            <Mail className="h-4 w-4" />
-            Demander mon comparatif gratuit
-          </a>
-        </div>
-      </div>
     </div>
   );
 }
@@ -433,17 +374,6 @@ function CarteAvantage({ avantage: a, profil }: { avantage: AvantageCapeb; profi
             Être rappelé
           </a>
         );
-      case "comparatif_factures":
-        return (
-          <a
-            href={buildMailtoComparatif(profil, a)}
-            className="flex items-center gap-1.5 rounded-[9px] px-3 py-2 text-xs font-semibold transition-colors"
-            style={{ background: "rgba(226,0,26,.08)", color: "#E2001A", border: "1px solid rgba(226,0,26,.2)" }}
-          >
-            <Mail className="h-3.5 w-3.5" />
-            Demander mon comparatif gratuit
-          </a>
-        );
     }
   };
 
@@ -504,13 +434,7 @@ function CarteAvantage({ avantage: a, profil }: { avantage: AvantageCapeb; profi
 
 // ── Estimateur ────────────────────────────────────────────────────────────────
 
-function EstimateurSection({
-  avantages,
-  profil,
-}: {
-  avantages: AvantageCapeb[];
-  profil: Profil;
-}) {
+function EstimateurSection({ avantages }: { avantages: AvantageCapeb[] }) {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [budgets, setBudgets] = useState<Record<string, string>>({});
 
@@ -610,13 +534,7 @@ function EstimateurSection({
           </div>
           <p className="text-xs text-center leading-relaxed" style={{ color: "#9A3412" }}>
             Estimation indicative basée sur les moyennes constatées par la CAPEB et les montants que vous avez saisis.
-            Hors conditions particulières.{" "}
-            <a
-              href={buildMailtoGeneral(profil)}
-              className="underline font-medium"
-            >
-              Pour un chiffre exact, demandez votre comparatif gratuit.
-            </a>
+            Hors conditions particulières. Pour un chiffre exact, contactez la CAPEB.
           </p>
         </div>
       )}
@@ -804,17 +722,15 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
 // ── Formulaire avantage (admin) ───────────────────────────────────────────────
 
 const TYPE_ACTION_LABELS: Record<string, string> = {
-  lien_externe: "Lien externe (URL)",
-  code_promo: "Code promo à afficher",
-  demande_rappel: "Demande de rappel (email pré-rempli)",
-  comparatif_factures: "Comparatif factures (email pré-rempli)",
+  lien_externe:  "Lien externe (URL) — « Découvrir l'offre »",
+  demande_rappel: "Demande de rappel (email pré-rempli) — « Être rappelé »",
+  code_promo:    "Code promo à afficher — « Obtenir mon code »",
 };
 
 const ACTION_VALEUR_LABELS: Record<string, string> = {
-  lien_externe: "URL du lien",
-  code_promo: "Code promo",
+  lien_externe:  "URL du lien",
   demande_rappel: "(email généré automatiquement, laisser vide)",
-  comparatif_factures: "(email généré automatiquement, laisser vide)",
+  code_promo:    "Code promo",
 };
 
 function FormulaireAvantage({
