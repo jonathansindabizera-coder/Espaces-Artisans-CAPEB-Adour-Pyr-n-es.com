@@ -114,7 +114,13 @@ export function AppSidebar() {
         <div className="mx-3 mb-2 h-px bg-white/15" />
 
         {/* ── NAVIGATION ── */}
-        <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-2 overflow-y-auto">
+          {!collapsed && (
+            <div className="text-[10px] tracking-[.16em] uppercase opacity-60 font-semibold px-3 mt-2 mb-2">
+              Pilotage
+            </div>
+          )}
+          <div className="space-y-[3px]">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.url);
             return (
@@ -122,15 +128,15 @@ export function AppSidebar() {
                 key={item.url}
                 to={item.url}
                 onClick={() => isMobile && setOpen(false)}
-                className="flex items-center gap-3 rounded-[10px] px-3 transition-all duration-150 select-none"
+                className="flex items-center gap-3 rounded-[11px] px-3 transition-all duration-150 select-none"
                 style={{
                   minHeight: 44,
                   background: active ? "white" : "transparent",
-                  boxShadow: active ? "0 2px 8px rgba(0,0,0,.14)" : "none",
-                  color: active ? "#E2001A" : "rgba(255,255,255,0.88)",
+                  boxShadow: active ? "0 4px 14px rgba(0,0,0,.14)" : "none",
+                  color: active ? "#A30012" : "rgba(255,255,255,0.88)",
                 }}
                 onMouseEnter={(e) => {
-                  if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+                  if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.13)";
                 }}
                 onMouseLeave={(e) => {
                   if (!active) e.currentTarget.style.background = "transparent";
@@ -138,11 +144,11 @@ export function AppSidebar() {
               >
                 <item.icon
                   className="shrink-0"
-                  style={{ width: 18, height: 18 }}
+                  style={{ width: 19, height: 19, strokeWidth: 1.9, opacity: active ? 1 : 0.92 }}
                 />
                 {!collapsed && (
                   <span
-                    className="font-display text-[13px] tracking-wide"
+                    className="font-display text-[14.5px] tracking-wide flex-1"
                     style={{ fontWeight: active ? 600 : 500 }}
                   >
                     {item.title}
@@ -151,6 +157,7 @@ export function AppSidebar() {
               </Link>
             );
           })}
+          </div>
         </nav>
 
         {/* ── FOOTER : profil ── */}

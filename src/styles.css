@@ -231,10 +231,28 @@
   .fade-in-up {
     animation: fadeInUp 300ms ease both;
   }
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
+
+  /* Pastille verte pulsante (sync formations) */
+  .pulse-green {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1E8E55;
+    flex-shrink: 0;
+    animation: pulseGreen 2s infinite;
   }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGreen {
+  0%   { box-shadow: 0 0 0 0   rgba(30,142,85,.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(30,142,85,0);  }
+  100% { box-shadow: 0 0 0 0   rgba(30,142,85,0);  }
 }
 
 /* =============================================
