@@ -18,6 +18,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/pv":         "PV & Devis",
   "/planning":   "Planning chantiers",
   "/formations": "Formations",
+  "/rh":         "RH & Juridique",
 };
 
 function TopBar() {

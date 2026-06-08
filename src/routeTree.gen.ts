@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedPvRouteImport } from './routes/_authenticated/pv'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
 import { Route as AuthenticatedFormationsRouteImport } from './routes/_authenticated/formations'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRhRoute = AuthenticatedRhRouteImport.update({
+  id: '/rh',
+  path: '/rh',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPvRoute = AuthenticatedPvRouteImport.update({
   id: '/pv',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/formations': typeof AuthenticatedFormationsRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
+  '/rh': typeof AuthenticatedRhRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/formations': typeof AuthenticatedFormationsRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
+  '/rh': typeof AuthenticatedRhRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +76,13 @@ export interface FileRoutesById {
   '/_authenticated/formations': typeof AuthenticatedFormationsRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
   '/_authenticated/pv': typeof AuthenticatedPvRoute
+  '/_authenticated/rh': typeof AuthenticatedRhRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/formations' | '/planning' | '/pv'
+  fullPaths: '/' | '/auth' | '/formations' | '/planning' | '/pv' | '/rh'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/formations' | '/planning' | '/pv'
+  to: '/' | '/auth' | '/formations' | '/planning' | '/pv' | '/rh'
   id:
     | '__root__'
     | '/'
@@ -82,6 +91,7 @@ export interface FileRouteTypes {
     | '/_authenticated/formations'
     | '/_authenticated/planning'
     | '/_authenticated/pv'
+    | '/_authenticated/rh'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -113,6 +123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/rh': {
+      id: '/_authenticated/rh'
+      path: '/rh'
+      fullPath: '/rh'
+      preLoaderRoute: typeof AuthenticatedRhRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pv': {
       id: '/_authenticated/pv'
       path: '/pv'
@@ -141,12 +158,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFormationsRoute: typeof AuthenticatedFormationsRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
   AuthenticatedPvRoute: typeof AuthenticatedPvRoute
+  AuthenticatedRhRoute: typeof AuthenticatedRhRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFormationsRoute: AuthenticatedFormationsRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
   AuthenticatedPvRoute: AuthenticatedPvRoute,
+  AuthenticatedRhRoute: AuthenticatedRhRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

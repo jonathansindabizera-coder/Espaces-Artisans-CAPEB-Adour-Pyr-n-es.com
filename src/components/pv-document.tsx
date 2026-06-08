@@ -75,7 +75,7 @@ export function PvDocumentDialog({
 }) {
   const today   = new Date().toISOString().slice(0, 10);
   const todayFr = toFrDate(today);
-  const profile = null;
+
 
   const [typeReception, setType]   = useState<"sans_reserve" | "avec_reserve">("sans_reserve");
   const [dateEffet, setDateEffet]   = useState(today);
@@ -101,14 +101,14 @@ export function PvDocumentDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const entreprise = profile?.entreprise || "—";
+  const entreprise = "—";
   const lieu       = cityFromAdresse(client.adresse);
   const dateMarche = chantier.date_creation?.slice(0, 10) ?? today;
 
   const buildPdf = () =>
     generatePvPdf({
       entreprise,
-      entrepriseAdresse: profile?.adresse ?? null,
+      entrepriseAdresse: null,
       clientNom: client.nom,
       clientAdresse: client.adresse,
       natureTravaux: chantier.nature_travaux,
@@ -138,7 +138,7 @@ export function PvDocumentDialog({
       doc.save(fileName);
 
       // 3. Envoi email
-      const destinataires = [emailClient, profile?.email]
+      const destinataires = [emailClient]
         .filter((x): x is string => typeof x === "string" && x.includes("@"));
 
       let emailSent = false;
