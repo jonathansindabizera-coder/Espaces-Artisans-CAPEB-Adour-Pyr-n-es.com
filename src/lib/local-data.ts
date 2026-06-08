@@ -22,6 +22,13 @@ export type Chantier = {
   duree_estimee: string | null;
   statut: StatutValue;
   date_creation: string;
+  // Planning (optionnel, ajouté ultérieurement)
+  date_debut_prevue?: string | null;
+  date_fin_prevue?: string | null;
+  metier_requis?: string | null;
+  nb_personnes_requises?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 const K_CLIENTS  = "ea_clients";
@@ -64,6 +71,15 @@ export function updateChantierStatut(id: string, statut: StatutValue): void {
   }
 }
 
+export function updateChantier(id: string, data: Partial<Omit<Chantier, "id" | "date_creation">>): void {
+  const list = loadChantiers();
+  const i = list.findIndex(c => c.id === id);
+  if (i !== -1) {
+    list[i] = { ...list[i], ...data };
+    localStorage.setItem(K_CHANTIERS, JSON.stringify(list));
+  }
+}
+
 export function notifyUpdate(): void {
   window.dispatchEvent(new Event(DATA_EVENT));
 }
@@ -81,6 +97,11 @@ export type EmployeRH = {
   statut: "ouvrier" | "etam" | "cadre";
   actif: boolean;
   created_at: string;
+  // Planning (optionnel, ajouté ultérieurement)
+  metier?: string | null;
+  couleur?: string | null;
+  latitude_domicile?: number | null;
+  longitude_domicile?: number | null;
 };
 
 export type ContratGenere = {
@@ -228,4 +249,64 @@ export function updateAvantage(id: string, data: Partial<Omit<AvantageCapeb, "id
 export function removeAvantage(id: string): void {
   const list = loadAvantages().filter(a => a.id !== id);
   localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
+}
+
+// ── Planning & Chantiers ──────────────────────────────────────────────────────
+
+export type Absence = {
+  id: string;
+  salarie_id: string;
+  date_debut: string;
+  date_fin: string;
+  motif: "conges" | "maladie" | "formation" | "autre";
+};
+
+export type Affectation = {
+  id: string;
+  chantier_id: string;
+  salarie_id: string;
+  date: string;
+};
+
+const K_ABSENCES     = "ea_absences";
+const K_AFFECTATIONS = "ea_affectations";
+
+export function loadAbsences(): Absence[] {
+  try { return JSON.parse(localStorage.getItem(K_ABSENCES) ?? "[]"); }
+  catch { return []; }
+}
+export function addAbsence(data: Omit<Absence, "id">): Absence {
+  const a: Absence = { id: crypto.randomUUID(), ...data };
+  const list = loadAbsences();
+  list.push(a);
+  localStorage.setItem(K_ABSENCES, JSON.stringify(list));
+  return a;
+}
+export function removeAbsence(id: string): void {
+  const list = loadAbsences().filter(a => a.id !== id);
+  localStorage.setItem(K_ABSENCES, JSON.stringify(list));
+}
+
+export function loadAffectations(): Affectation[] {
+  try { return JSON.parse(localStorage.getItem(K_AFFECTATIONS) ?? "[]"); }
+  catch { return []; }
+}
+export function addAffectation(data: Omit<Affectation, "id">): Affectation {
+  const a: Affectation = { id: crypto.randomUUID(), ...data };
+  const list = loadAffectations();
+  list.push(a);
+  localStorage.setItem(K_AFFECTATIONS, JSON.stringify(list));
+  return a;
+}
+export function removeAffectation(id: string): void {
+  const list = loadAffectations().filter(a => a.id !== id);
+  localStorage.setItem(K_AFFECTATIONS, JSON.stringify(list));
+}
+export function replaceAffectation(id: string, data: Partial<Omit<Affectation, "id">>): void {
+  const list = loadAffectations();
+  const i = list.findIndex(a => a.id === id);
+  if (i !== -1) {
+    list[i] = { ...list[i], ...data };
+    localStorage.setItem(K_AFFECTATIONS, JSON.stringify(list));
+  }
 }

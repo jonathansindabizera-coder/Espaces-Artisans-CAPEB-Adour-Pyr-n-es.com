@@ -1,35 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Users,
-  Trash2,
-  CalendarOff,
-  Sparkles,
-  Loader2,
-  CheckCircle2,
-  X,
-} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -37,687 +7,993 @@ import {
   useSensors,
   useDraggable,
   useDroppable,
+  DragOverlay,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import {
   addDays,
   format,
-  isBefore,
+  startOfWeek,
   isWithinInterval,
   parseISO,
-  startOfWeek,
+  isSameDay,
+  subWeeks,
+  addWeeks,
 } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { proposerReaffectation, type PropositionReaff } from "@/lib/planning-ai.functions";
-import { PvDocumentDialog } from "@/components/pv-document";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Mail,
+  MapPin,
+  AlertTriangle,
+  UserX,
+  Wrench,
+  X,
+  Plus,
+  Check,
+  Navigation,
+  CalendarDays,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  type Chantier,
+  type EmployeRH,
+  type Client,
+  type Absence,
+  type Affectation,
+  loadChantiers,
+  loadClients,
+  loadEmployesRH,
+  loadAbsences,
+  loadAffectations,
+  addAbsence,
+  removeAbsence,
+  addAffectation,
+  removeAffectation,
+  updateChantier,
+  updateEmployeRH,
+  DATA_EVENT,
+} from "@/lib/local-data";
+import { geocodeAdresse, haversineKm, fmtDist } from "@/lib/geo";
 
 export const Route = createFileRoute("/_authenticated/planning")({
-  head: () => ({ meta: [{ title: "Planning chantiers – CAPEB" }] }),
+  ssr: false,
   component: PlanningPage,
 });
 
-type Employe = { id: string; nom: string; role: string | null; couleur: string; actif: boolean };
-type Affectation = {
-  id: string;
-  chantier_id: string;
-  employe_id: string;
-  date: string;
-  demi_journee: "matin" | "apres_midi" | "journee";
-};
-type Absence = { id: string; employe_id: string; date_debut: string; date_fin: string; motif: string | null };
-type Chantier = {
-  id: string;
-  client_id: string;
-  nature_travaux: string;
-  duree_estimee: string | null;
-  statut: string;
-  date_creation: string;
-};
-type Client = { id: string; nom: string; email: string | null; adresse: string | null };
+// ── Constantes ────────────────────────────────────────────────────────────────
 
-const PALETTE = ["#E2001A", "#1E88E5", "#43A047", "#FB8C00", "#8E24AA", "#00897B", "#F4511E", "#3949AB"];
+const METIERS = ["Maçonnerie", "Charpente", "Couverture", "Plomberie", "Électricité", "Menuiserie", "Carrelage", "Peinture", "Isolation", "Autre"];
+const MOTIFS: Record<Absence["motif"], string> = {
+  conges: "Congés",
+  maladie: "Maladie",
+  formation: "Formation",
+  autre: "Autre",
+};
+const PALETTE = ["#E2001A", "#1E88E5", "#43A047", "#FB8C00", "#8E24AA", "#00897B", "#F4511E", "#3949AB", "#6D4C41", "#00838F"];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function couleurEmp(id: string, stored?: string | null): string {
+  if (stored) return stored;
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffffffff;
+  return PALETTE[Math.abs(h) % PALETTE.length];
+}
+
+function initiales(nom: string, prenom: string): string {
+  return `${prenom[0] ?? ""}${nom[0] ?? ""}`.toUpperCase();
+}
+
+function semaineDays(weekStart: Date): Date[] {
+  return Array.from({ length: 6 }, (_, i) => addDays(weekStart, i));
+}
+
+function isAbsent(salarieId: string, date: string, absences: Absence[]): Absence | null {
+  const d = parseISO(date);
+  return absences.find(a =>
+    a.salarie_id === salarieId &&
+    isWithinInterval(d, { start: parseISO(a.date_debut), end: parseISO(a.date_fin) })
+  ) ?? null;
+}
+
+function fmtDate(d: Date): string {
+  return format(d, "yyyy-MM-dd");
+}
+
+function affsByCell(affectations: Affectation[]): Map<string, Affectation[]> {
+  const map = new Map<string, Affectation[]>();
+  for (const a of affectations) {
+    const key = `${a.salarie_id}|${a.date}`;
+    const arr = map.get(key) ?? [];
+    arr.push(a);
+    map.set(key, arr);
+  }
+  return map;
+}
+
+// ── Scoring IA ────────────────────────────────────────────────────────────────
+
+type SuggestionItem = {
+  employe: EmployeRH;
+  score: number;
+  raisons: string[];
+  couleur: string;
+};
+
+function scorerSalaries(
+  chantier: Chantier,
+  date: string,
+  weekDates: string[],
+  employes: EmployeRH[],
+  affectations: Affectation[],
+  absences: Absence[],
+): SuggestionItem[] {
+  const results: SuggestionItem[] = [];
+
+  for (const emp of employes) {
+    if (!emp.actif) continue;
+    if (isAbsent(emp.id, date, absences)) continue;
+    const dejaAff = affectations.some(a => a.salarie_id === emp.id && a.date === date);
+    if (dejaAff) continue;
+
+    let score = 0;
+    const raisons: string[] = [];
+
+    // Métier (40 pts)
+    if (chantier.metier_requis && emp.metier) {
+      if (emp.metier === chantier.metier_requis) {
+        score += 40;
+        raisons.push(`${emp.metier} ✓`);
+      } else {
+        raisons.push(`Métier: ${emp.metier}`);
+      }
+    } else if (!chantier.metier_requis) {
+      score += 20;
+      raisons.push("Tous métiers");
+    } else {
+      raisons.push("Métier non renseigné");
+    }
+
+    // Proximité (30 pts)
+    if (emp.latitude_domicile && emp.longitude_domicile && chantier.latitude && chantier.longitude) {
+      const km = haversineKm(emp.latitude_domicile, emp.longitude_domicile, chantier.latitude, chantier.longitude);
+      const pts = Math.max(0, Math.min(30, 30 - km));
+      score += pts;
+      raisons.push(`${fmtDist(km)} du chantier`);
+    } else {
+      score += 10;
+    }
+
+    // Charge semaine (30 pts)
+    const charge = affectations.filter(a => a.salarie_id === emp.id && weekDates.includes(a.date)).length;
+    const pts = Math.max(0, 30 - charge * 6);
+    score += pts;
+    const libres = weekDates.length - charge;
+    raisons.push(`${libres} jour${libres > 1 ? "s" : ""} libre${libres > 1 ? "s" : ""}`);
+
+    results.push({ employe: emp, score, raisons, couleur: couleurEmp(emp.id, emp.couleur) });
+  }
+
+  return results.sort((a, b) => b.score - a.score).slice(0, 3);
+}
+
+// ── Types DnD ─────────────────────────────────────────────────────────────────
+
+type DragData =
+  | { kind: "new"; chantierId: string }
+  | { kind: "move"; affectationId: string; chantierId: string };
+
+type DropData = { salarieId: string; date: string };
+
+// ── Composant principal ───────────────────────────────────────────────────────
 
 function PlanningPage() {
-  const qc = useQueryClient();
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [showSaturday, setShowSaturday] = useState(false);
-  const [teamOpen, setTeamOpen] = useState(false);
-  const [assignCell, setAssignCell] = useState<{ employeId: string; date: string } | null>(null);
-  const [absenceFor, setAbsenceFor] = useState<Employe | null>(null);
-  const [aiProp, setAiProp] = useState<{ prop: PropositionReaff; absence: Absence } | null>(null);
-  const [pvFor, setPvFor] = useState<{ chantier: Chantier; client: Client } | null>(null);
-
-  const days = useMemo(
-    () => Array.from({ length: showSaturday ? 6 : 5 }, (_, i) => addDays(weekStart, i)),
-    [weekStart, showSaturday],
+  const [weekStart, setWeekStart] = useState<Date>(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 })
   );
-  const dateStrs = days.map((d) => format(d, "yyyy-MM-dd"));
+  const [view, setView] = useState<"grille" | "carte">("grille");
+  const [employes, setEmployes] = useState<EmployeRH[]>([]);
+  const [chantiers, setChantiers] = useState<Chantier[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [absences, setAbsences] = useState<Absence[]>([]);
+  const [affectations, setAffectations] = useState<Affectation[]>([]);
 
-  const { data: employes = [] } = useQuery({
-    queryKey: ["employes"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("employes").select("*").order("nom");
-      if (error) throw error;
-      return data as Employe[];
-    },
-  });
-  const employesActifs = employes.filter((e) => e.actif);
+  const [absenceModal, setAbsenceModal] = useState<EmployeRH | null>(null);
+  const [assignModal, setAssignModal] = useState<{ salarieId: string; date: string } | null>(null);
+  const [suggestionFor, setSuggestionFor] = useState<{ chantier: Chantier; date: string } | null>(null);
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
+  const [activeDay, setActiveDay] = useState<string>(() => fmtDate(new Date()));
+  const [editEmpId, setEditEmpId] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState<DragData | null>(null);
 
-  const { data: chantiers = [] } = useQuery({
-    queryKey: ["chantiers"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("chantiers").select("*");
-      if (error) throw error;
-      return data as Chantier[];
-    },
-  });
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, nom, email, adresse");
-      if (error) throw error;
-      return data as Client[];
-    },
-  });
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const { data: affectations = [] } = useQuery({
-    queryKey: ["affectations", dateStrs[0], dateStrs[dateStrs.length - 1]],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("affectations")
-        .select("*")
-        .gte("date", dateStrs[0])
-        .lte("date", dateStrs[dateStrs.length - 1]);
-      if (error) throw error;
-      return data as Affectation[];
-    },
-  });
+  const reload = useCallback(() => {
+    setEmployes(loadEmployesRH().filter(e => e.actif));
+    setChantiers(loadChantiers());
+    setClients(loadClients());
+    setAbsences(loadAbsences());
+    setAffectations(loadAffectations());
+  }, []);
 
-  const { data: absences = [] } = useQuery({
-    queryKey: ["absences"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("absences").select("*");
-      if (error) throw error;
-      return data as Absence[];
-    },
-  });
+  useEffect(() => {
+    reload();
+    window.addEventListener(DATA_EVENT, reload);
+    return () => window.removeEventListener(DATA_EVENT, reload);
+  }, [reload]);
 
-  const clientById = useMemo(() => Object.fromEntries(clients.map((c) => [c.id, c])), [clients]);
-  const chantierById = useMemo(() => Object.fromEntries(chantiers.map((c) => [c.id, c])), [chantiers]);
-  const employeById = useMemo(() => Object.fromEntries(employes.map((e) => [e.id, e])), [employes]);
+  // Géocodage automatique en arrière-plan
+  useEffect(() => {
+    const run = async () => {
+      const ch = loadChantiers();
+      const cl = loadClients();
+      const em = loadEmployesRH();
+      for (const c of ch) {
+        if (c.latitude == null || c.longitude == null) {
+          const client = cl.find(x => x.id === c.client_id);
+          if (client?.adresse) {
+            const coords = await geocodeAdresse(client.adresse);
+            if (coords) updateChantier(c.id, { latitude: coords.lat, longitude: coords.lon });
+          }
+        }
+      }
+      for (const e of em) {
+        if ((e.latitude_domicile == null || e.longitude_domicile == null) && e.salarie_adresse) {
+          const coords = await geocodeAdresse(e.salarie_adresse);
+          if (coords) updateEmployeRH(e.id, { latitude_domicile: coords.lat, longitude_domicile: coords.lon });
+        }
+      }
+      reload();
+    };
+    run();
+  // Une seule fois au montage
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const villeOf = (cl?: Client) => {
-    if (!cl?.adresse) return null;
-    const parts = cl.adresse.split(/\n|,/).map((s) => s.trim()).filter(Boolean);
-    return parts[parts.length - 1] || null;
-  };
-
-  // Chantiers à planifier : devis_signe ou travaux_en_cours
-  const aPlanifier = chantiers.filter((c) =>
-    ["devis_signe", "travaux_en_cours"].includes(c.statut),
+  const days = semaineDays(weekStart);
+  const weekDates = days.map(fmtDate);
+  const cellMap = affsByCell(affectations);
+  const chantiersActifs = chantiers.filter(c =>
+    c.statut === "devis_signe" || c.statut === "travaux_en_cours"
   );
 
-  // Chantiers terminés à proposer pour PV
-  const aFinaliser = useMemo(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const byChantier = new Map<string, string>();
-    affectations.forEach((a) => {
-      const cur = byChantier.get(a.chantier_id);
-      if (!cur || a.date > cur) byChantier.set(a.chantier_id, a.date);
-    });
-    return chantiers.filter((c) => {
-      if (c.statut !== "travaux_en_cours") return false;
-      const last = byChantier.get(c.id);
-      return last && last < today;
-    });
-  }, [chantiers, affectations]);
+  function clientNom(id: string) {
+    return clients.find(c => c.id === id)?.nom ?? "—";
+  }
 
-  const isAbsent = (empId: string, dateStr: string) =>
-    absences.some(
-      (a) =>
-        a.employe_id === empId &&
-        isWithinInterval(parseISO(dateStr), {
-          start: parseISO(a.date_debut),
-          end: parseISO(a.date_fin),
-        }),
-    );
+  // ── DnD ──────────────────────────────────────────────────────────────────────
 
-  // --- Mutations ---
-  const upsertAffectation = useMutation({
-    mutationFn: async (input: {
-      id?: string;
-      chantier_id: string;
-      employe_id: string;
-      date: string;
-      demi_journee?: "matin" | "apres_midi" | "journee";
-    }) => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Non connecté");
-      if (input.id) {
-        const { error } = await supabase
-          .from("affectations")
-          .update({ employe_id: input.employe_id, date: input.date, demi_journee: input.demi_journee ?? "journee" })
-          .eq("id", input.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("affectations").insert({
-          user_id: u.user.id,
-          chantier_id: input.chantier_id,
-          employe_id: input.employe_id,
-          date: input.date,
-          demi_journee: input.demi_journee ?? "journee",
-        });
-        if (error) throw error;
-      }
-      // Auto-status : devis_signe → travaux_en_cours
-      const ch = chantierById[input.chantier_id];
-      if (ch && ch.statut === "devis_signe") {
-        await supabase.from("chantiers").update({ statut: "travaux_en_cours" }).eq("id", ch.id);
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["affectations"] });
-      qc.invalidateQueries({ queryKey: ["chantiers"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  function handleDragStart(ev: DragStartEvent) {
+    setDragActive(ev.active.data.current as DragData);
+  }
 
-  const removeAffectation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("affectations").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["affectations"] }),
-  });
+  function handleDragEnd(ev: DragEndEvent) {
+    setDragActive(null);
+    const drop = ev.over?.data.current as DropData | undefined;
+    if (!drop) return;
+    const drag = ev.active.data.current as DragData;
+    applyAffectation(drag, drop.salarieId, drop.date);
+  }
 
-  // --- AI proposition au déclenchement d'une absence ---
-  const aiCall = useServerFn(proposerReaffectation);
-
-  const declencherIA = async (absence: Absence) => {
-    const debut = absence.date_debut;
-    const fin = absence.date_fin;
-    // chantiers planifiés sur cet employé pendant l'absence
-    const { data: affs } = await supabase
-      .from("affectations")
-      .select("*")
-      .eq("employe_id", absence.employe_id)
-      .gte("date", debut)
-      .lte("date", fin);
-    if (!affs || affs.length === 0) return;
-
-    const emp = employeById[absence.employe_id];
-    const groupes = new Map<string, Affectation[]>();
-    (affs as Affectation[]).forEach((a) => {
-      const arr = groupes.get(a.chantier_id) ?? [];
-      arr.push(a);
-      groupes.set(a.chantier_id, arr);
-    });
-
-    const chantiersImpactes = Array.from(groupes.entries()).map(([cid, list]) => {
-      const ch = chantierById[cid];
-      const cl = ch ? clientById[ch.client_id] : undefined;
-      return {
-        id: cid,
-        client: cl?.nom ?? "Client",
-        ville: villeOf(cl),
-        nature: ch?.nature_travaux ?? "",
-        duree: ch?.duree_estimee ?? null,
-        jours: list.map((a) => ({ date: a.date, demi_journee: a.demi_journee, affectationId: a.id })),
-      };
-    });
-
-    const periodDates: string[] = [];
-    for (let d = parseISO(debut); !isBefore(parseISO(fin), d); d = addDays(d, 1)) {
-      periodDates.push(format(d, "yyyy-MM-dd"));
+  function applyAffectation(drag: DragData, salarieId: string, date: string) {
+    if (drag.kind === "move") {
+      removeAffectation(drag.affectationId);
+      addAffectation({ chantier_id: drag.chantierId, salarie_id: salarieId, date });
+    } else {
+      const existe = affectations.some(
+        a => a.salarie_id === salarieId && a.date === date && a.chantier_id === drag.chantierId
+      );
+      if (!existe) addAffectation({ chantier_id: drag.chantierId, salarie_id: salarieId, date });
     }
+    reload();
+    window.dispatchEvent(new Event(DATA_EVENT));
+  }
 
-    const employesDisponibles = employesActifs
-      .filter((e) => e.id !== absence.employe_id)
-      .map((e) => {
-        const occupiedDates = new Set(
-          (affectations as Affectation[])
-            .filter((a) => a.employe_id === e.id)
-            .map((a) => a.date),
-        );
-        const absDates = absences
-          .filter((a) => a.employe_id === e.id)
-          .flatMap((a) => {
-            const out: string[] = [];
-            for (let d = parseISO(a.date_debut); !isBefore(parseISO(a.date_fin), d); d = addDays(d, 1)) {
-              out.push(format(d, "yyyy-MM-dd"));
-            }
-            return out;
-          });
-        const absSet = new Set(absDates);
-        const joursLibres = periodDates.filter((d) => !occupiedDates.has(d) && !absSet.has(d));
-        return { id: e.id, nom: e.nom, role: e.role, joursLibres };
-      });
+  function supprimerAff(id: string) {
+    removeAffectation(id);
+    reload();
+    window.dispatchEvent(new Event(DATA_EVENT));
+  }
 
-    try {
-      const prop = await aiCall({
-        data: {
-          absence: {
-            employeNom: emp?.nom ?? "Employé",
-            motif: absence.motif,
-            debut,
-            fin,
-          },
-          chantiersImpactes,
-          employesDisponibles,
-        },
-      });
-      setAiProp({ prop, absence });
-    } catch (e) {
-      toast.error((e as Error).message);
+  // ── Dupliquer semaine précédente ──────────────────────────────────────────
+
+  function dupliquerSemainePrecedente() {
+    const prevDates = semaineDays(subWeeks(weekStart, 1)).map(fmtDate);
+    const affsPrev = loadAffectations().filter(a => prevDates.includes(a.date));
+    const absNow = loadAbsences();
+    const affsNow = loadAffectations();
+    let ajoutees = 0;
+    for (const a of affsPrev) {
+      const newDate = fmtDate(addDays(parseISO(a.date), 7));
+      if (isAbsent(a.salarie_id, newDate, absNow)) continue;
+      const existe = affsNow.some(x => x.salarie_id === a.salarie_id && x.date === newDate && x.chantier_id === a.chantier_id);
+      if (!existe) { addAffectation({ chantier_id: a.chantier_id, salarie_id: a.salarie_id, date: newDate }); ajoutees++; }
     }
-  };
+    reload();
+    toast.success(`${ajoutees} affectation${ajoutees > 1 ? "s" : ""} dupliquée${ajoutees > 1 ? "s" : ""}`);
+  }
 
-  const appliquerProposition = useMutation({
-    mutationFn: async () => {
-      if (!aiProp) return;
-      for (const t of aiProp.prop.transferts) {
-        const { error } = await supabase
-          .from("affectations")
-          .update({
-            employe_id: t.nouveauEmployeId,
-            date: t.nouvelleDate,
-            demi_journee: t.demi_journee,
-          })
-          .eq("id", t.affectationId);
-        if (error) throw error;
+  // ── Email planning ────────────────────────────────────────────────────────
+
+  function envoyerPlanning() {
+    const label = `${format(days[0], "dd/MM", { locale: fr })} – ${format(days[5], "dd/MM/yyyy", { locale: fr })}`;
+    let corps = `Planning semaine du ${label}\n\n`;
+    for (const emp of employes) {
+      const lignes: string[] = [];
+      for (const d of days) {
+        const ds = fmtDate(d);
+        const affs = cellMap.get(`${emp.id}|${ds}`) ?? [];
+        if (affs.length) {
+          const noms = affs.map(a => {
+            const ch = chantiers.find(c => c.id === a.chantier_id);
+            return ch ? `${ch.nature_travaux} (${clientNom(ch.client_id)})` : "—";
+          }).join(", ");
+          lignes.push(`  ${format(d, "EEE dd/MM", { locale: fr })}: ${noms}`);
+        }
       }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["affectations"] });
-      toast.success("Proposition appliquée");
-      setAiProp(null);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
-  const onDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over) return;
-    const data = active.data.current as
-      | { type: "new"; chantierId: string }
-      | { type: "move"; affectationId: string; chantierId: string }
-      | undefined;
-    const target = over.data.current as { employeId: string; date: string } | undefined;
-    if (!data || !target) return;
-    if (isAbsent(target.employeId, target.date)) {
-      toast.error("Cet employé est absent ce jour-là");
-      return;
+      if (lignes.length) corps += `${emp.prenom} ${emp.nom}:\n${lignes.join("\n")}\n\n`;
     }
-    upsertAffectation.mutate({
-      id: data.type === "move" ? data.affectationId : undefined,
-      chantier_id: data.chantierId,
-      employe_id: target.employeId,
-      date: target.date,
-    });
-  };
+    window.open(`mailto:?subject=${encodeURIComponent(`Planning semaine ${label}`)}&body=${encodeURIComponent(corps)}`, "_blank");
+  }
+
+  // ── Suggestions IA ───────────────────────────────────────────────────────
+
+  function ouvrirSuggestions(chantier: Chantier, date: string) {
+    setSuggestions(scorerSalaries(chantier, date, weekDates, employes, affectations, absences));
+    setSuggestionFor({ chantier, date });
+  }
+
+  function accepterSuggestion(item: SuggestionItem) {
+    if (!suggestionFor) return;
+    applyAffectation({ kind: "new", chantierId: suggestionFor.chantier.id }, item.employe.id, suggestionFor.date);
+    setSuggestionFor(null);
+    toast.success(`${item.employe.prenom} ${item.employe.nom} affecté(e)`);
+  }
+
+  const labelSemaine = `${format(days[0], "dd MMM", { locale: fr })} – ${format(days[5], "dd MMM yyyy", { locale: fr })}`;
+
+  if (employes.length === 0 && chantiers.length === 0) return <EtatVide />;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-3xl text-foreground">Planning chantiers</h1>
-          <p className="text-muted-foreground mt-1">
-            Affectez vos équipes et anticipez les imprévus.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 text-sm">
-            <Switch checked={showSaturday} onCheckedChange={setShowSaturday} id="sat" />
-            <Label htmlFor="sat" className="cursor-pointer">Samedi</Label>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+        {/* ── En-tête ── */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          <div>
+            <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: "#1A1714", lineHeight: 1.2 }}>
+              Planning chantiers
+            </h1>
+            <p style={{ fontSize: 13, color: "#8B847D", marginTop: 2 }}>
+              Glissez les chantiers sur les salariés · Semaine du {labelSemaine}
+            </p>
           </div>
-          <Dialog open={teamOpen} onOpenChange={setTeamOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="font-display">
-                <Users className="h-4 w-4 mr-2" /> Mon équipe
-              </Button>
-            </DialogTrigger>
-            <TeamPanel employes={employes} onClose={() => setTeamOpen(false)} />
-          </Dialog>
+          <div style={{ flex: 1 }} />
+
+          {/* Navigation semaine */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <NavBtn onClick={() => setWeekStart(w => subWeeks(w, 1))} icon={<ChevronLeft size={16} />} />
+            <button
+              onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+              style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: "#E2001A", color: "white", border: "none", cursor: "pointer" }}
+            >
+              Aujourd'hui
+            </button>
+            <NavBtn onClick={() => setWeekStart(w => addWeeks(w, 1))} icon={<ChevronRight size={16} />} />
+          </div>
+
+          <ActionBtn onClick={dupliquerSemainePrecedente} icon={<Copy size={14} />} label="Dupliquer sem. préc." />
+          <ActionBtn onClick={envoyerPlanning} icon={<Mail size={14} />} label="Envoyer" />
+
+          {/* Vue */}
+          <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid #E5E0DA" }}>
+            {(["grille", "carte"] as const).map(v => (
+              <button key={v} onClick={() => setView(v)} style={{ padding: "5px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", background: view === v ? "#E2001A" : "white", color: view === v ? "white" : "#4A453F", border: "none" }}>
+                {v === "grille" ? "Grille" : "Carte"}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* AI Card */}
-      {aiProp && (
-        <Card className="bg-foreground text-background border-0 shadow-lg">
-          <CardContent className="p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
-                IA
-              </span>
-              <span className="font-display uppercase text-sm">Assistant — réorganisation proposée</span>
-            </div>
-            <p className="text-sm leading-relaxed">{aiProp.prop.resume}</p>
-            <div className="flex gap-2 pt-2">
-              <Button
-                size="sm"
-                onClick={() => appliquerProposition.mutate()}
-                disabled={appliquerProposition.isPending || aiProp.prop.transferts.length === 0}
-              >
-                {appliquerProposition.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                )}
-                Appliquer la proposition
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setAiProp(null)} className="text-background hover:bg-background/10">
-                Ignorer
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* ── Corps ── */}
+        {view === "grille" ? (
+          <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+            <PanneauChantiers
+              chantiers={chantiersActifs}
+              clients={clients}
+              affectations={affectations}
+              onSuggestion={ouvrirSuggestions}
+              weekDates={weekDates}
+            />
 
-      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-        <div className="grid lg:grid-cols-[1fr_280px] gap-4">
-          {/* Planning grid */}
-          <div className="space-y-3 min-w-0">
-            {/* Week nav */}
-            <div className="flex items-center justify-between bg-card border rounded-lg p-2">
-              <Button variant="ghost" size="sm" onClick={() => setWeekStart(addDays(weekStart, -7))}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="text-center">
-                <div className="font-display text-sm uppercase">
-                  Semaine du {format(weekStart, "d MMMM", { locale: fr })}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {format(weekStart, "d MMM", { locale: fr })} → {format(days[days.length - 1], "d MMM yyyy", { locale: fr })}
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setWeekStart(addDays(weekStart, 7))}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <div className="min-w-[640px]">
-                {/* Header */}
-                <div
-                  className="grid gap-1 mb-1"
-                  style={{ gridTemplateColumns: `160px repeat(${days.length}, minmax(100px, 1fr))` }}
-                >
-                  <div />
-                  {days.map((d) => (
-                    <div
-                      key={d.toISOString()}
-                      className="text-center text-xs font-display uppercase py-2 bg-muted/50 rounded"
-                    >
-                      <div>{format(d, "EEE", { locale: fr })}</div>
-                      <div className="text-foreground font-bold">{format(d, "d MMM", { locale: fr })}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {employesActifs.length === 0 && (
-                  <Card>
-                    <CardContent className="p-6 text-center text-muted-foreground text-sm">
-                      Aucun employé. Cliquez sur « Mon équipe » pour en ajouter.
-                    </CardContent>
-                  </Card>
-                )}
-
-                {employesActifs.map((emp) => (
-                  <div
-                    key={emp.id}
-                    className="grid gap-1 mb-1"
-                    style={{ gridTemplateColumns: `160px repeat(${days.length}, minmax(100px, 1fr))` }}
-                  >
-                    <div className="bg-card border rounded p-2 flex items-center gap-2">
-                      <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: emp.couleur }}
-                      >
-                        {emp.nom.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold truncate">{emp.nom}</div>
-                        {emp.role && <div className="text-[10px] text-muted-foreground truncate">{emp.role}</div>}
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => setAbsenceFor(emp)}
-                        title="Marquer absent"
-                      >
-                        <CalendarOff className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                    {days.map((d) => {
-                      const dateStr = format(d, "yyyy-MM-dd");
-                      const absent = isAbsent(emp.id, dateStr);
-                      const cellAffs = (affectations as Affectation[]).filter(
-                        (a) => a.employe_id === emp.id && a.date === dateStr,
-                      );
+            <div style={{ flex: 1, overflowX: "auto" }}>
+              <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 520 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: 140, textAlign: "left", padding: "6px 8px", fontSize: 12, color: "#8B847D", fontWeight: 600, borderBottom: "2px solid #E5E0DA" }}>
+                      Salarié
+                    </th>
+                    {days.map(d => {
+                      const ds = fmtDate(d);
+                      const isToday = isSameDay(d, new Date());
                       return (
-                        <Cell
-                          key={dateStr}
-                          employeId={emp.id}
-                          date={dateStr}
-                          absent={absent}
-                          affectations={cellAffs}
-                          chantierById={chantierById}
-                          clientById={clientById}
-                          onTap={() => !absent && setAssignCell({ employeId: emp.id, date: dateStr })}
-                          onRemove={(id) => removeAffectation.mutate(id)}
-                        />
+                        <th key={ds} style={{ padding: "6px 4px", fontSize: 11, fontWeight: 700, textAlign: "center", color: isToday ? "#E2001A" : "#4A453F", borderBottom: `2px solid ${isToday ? "#E2001A" : "#E5E0DA"}`, minWidth: 80 }}>
+                          <div>{format(d, "EEE", { locale: fr }).toUpperCase()}</div>
+                          <div style={{ fontWeight: 400, fontSize: 11 }}>{format(d, "dd/MM")}</div>
+                        </th>
                       );
                     })}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Chantiers à finaliser */}
-            {aFinaliser.length > 0 && (
-              <Card>
-                <CardContent className="p-3 space-y-2">
-                  <div className="font-display uppercase text-xs text-muted-foreground">
-                    Travaux terminés ?
-                  </div>
-                  {aFinaliser.map((ch) => {
-                    const cl = clientById[ch.client_id];
-                    return (
-                      <div key={ch.id} className="flex items-center justify-between gap-2 text-sm">
-                        <div className="min-w-0">
-                          <span className="font-semibold">{cl?.nom ?? "Client"}</span>
-                          <span className="text-muted-foreground"> — {ch.nature_travaux}</span>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employes.map((emp, idx) => (
+                    <tr key={emp.id} style={{ background: idx % 2 === 0 ? "white" : "#FAF8F5" }}>
+                      <td style={{ padding: "4px 8px", borderBottom: "1px solid #F0EBE5", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: couleurEmp(emp.id, emp.couleur), display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 10, fontWeight: 700 }}>
+                            {initiales(emp.nom, emp.prenom)}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1A1714", lineHeight: 1.2 }}>{emp.prenom} {emp.nom}</div>
+                            {emp.metier && <div style={{ fontSize: 10, color: "#8B847D" }}>{emp.metier}</div>}
+                          </div>
+                          <button onClick={() => setEditEmpId(emp.id)} title="Paramétrer" style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#C5BDB5", padding: 2 }}>
+                            <Wrench size={12} />
+                          </button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            if (!cl) return;
-                            setPvFor({
-                              chantier: ch,
-                              client: { id: cl.id, nom: cl.nom, email: cl.email, adresse: cl.adresse },
-                            });
-                          }}
+                        <button
+                          onClick={() => setAbsenceModal(emp)}
+                          style={{ marginTop: 3, fontSize: 9, color: "#8B847D", background: "none", border: "none", cursor: "pointer", padding: "0 2px" }}
                         >
-                          Générer le PV
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Side panel : chantiers à planifier */}
-          <div className="space-y-2">
-            <div className="bg-card border rounded-lg p-3">
-              <div className="font-display uppercase text-xs text-muted-foreground mb-2">
-                Chantiers à planifier
-              </div>
-              {aPlanifier.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">
-                  Aucun chantier en attente. Les dossiers signés apparaîtront ici.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {aPlanifier.map((ch) => {
-                    const cl = clientById[ch.client_id];
-                    return (
-                      <ChantierChip
-                        key={ch.id}
-                        chantier={ch}
-                        client={cl}
-                        ville={villeOf(cl)}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-              <p className="text-[11px] text-muted-foreground mt-3 leading-snug">
-                💡 Sur ordinateur : glissez un chantier sur une case.<br />
-                Sur mobile : tapez une case vide pour l'affecter.
-              </p>
+                          + Absence
+                        </button>
+                      </td>
+                      {days.map(d => {
+                        const ds = fmtDate(d);
+                        const abs = isAbsent(emp.id, ds, absences);
+                        const affs = cellMap.get(`${emp.id}|${ds}`) ?? [];
+                        return (
+                          <GridCell
+                            key={ds}
+                            salarieId={emp.id}
+                            date={ds}
+                            absente={abs}
+                            affectations={affs}
+                            chantiers={chantiers}
+                            clients={clients}
+                            employe={emp}
+                            onRemove={supprimerAff}
+                            onTap={() => setAssignModal({ salarieId: emp.id, date: ds })}
+                          />
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  {employes.length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#8B847D", fontSize: 13 }}>
+                        Aucun salarié actif — ajoutez des salariés dans le module RH
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
-      </DndContext>
+        ) : (
+          <CarteView
+            chantiers={chantiersActifs}
+            clients={clients}
+            employes={employes}
+            affectations={affectations}
+            activeDay={activeDay}
+            onDayChange={setActiveDay}
+            days={days}
+          />
+        )}
+      </div>
 
-      {/* Assign-by-tap dialog */}
-      <Dialog open={!!assignCell} onOpenChange={(o) => !o && setAssignCell(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-display">Affecter un chantier</DialogTitle>
-          </DialogHeader>
-          {assignCell && (
-            <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">
-                {employeById[assignCell.employeId]?.nom} —{" "}
-                {format(parseISO(assignCell.date), "EEEE d MMMM", { locale: fr })}
-              </div>
-              {aPlanifier.length === 0 && (
-                <p className="text-sm italic text-muted-foreground">Aucun chantier disponible.</p>
-              )}
-              <div className="space-y-1 max-h-72 overflow-y-auto">
-                {aPlanifier.map((ch) => {
-                  const cl = clientById[ch.client_id];
-                  return (
-                    <button
-                      key={ch.id}
-                      type="button"
-                      onClick={() => {
-                        upsertAffectation.mutate({
-                          chantier_id: ch.id,
-                          employe_id: assignCell.employeId,
-                          date: assignCell.date,
-                        });
-                        setAssignCell(null);
-                      }}
-                      className="w-full text-left p-2 rounded border hover:bg-muted/60 text-sm"
-                    >
-                      <div className="font-semibold">{cl?.nom ?? "Client"}</div>
-                      <div className="text-xs text-muted-foreground truncate">{ch.nature_travaux}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Absence dialog */}
-      <Dialog open={!!absenceFor} onOpenChange={(o) => !o && setAbsenceFor(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-display">
-              Marquer absent — {absenceFor?.nom}
-            </DialogTitle>
-          </DialogHeader>
-          {absenceFor && (
-            <AbsenceForm
-              employe={absenceFor}
-              onCreated={async (abs) => {
-                setAbsenceFor(null);
-                qc.invalidateQueries({ queryKey: ["absences"] });
-                await declencherIA(abs);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {pvFor && (
-        <PvDocumentDialog
-          open
-          onOpenChange={(o) => !o && setPvFor(null)}
-          chantier={pvFor.chantier}
-          client={pvFor.client}
+      {/* Modales */}
+      {absenceModal && (
+        <AbsenceModal
+          employe={absenceModal}
+          onClose={() => setAbsenceModal(null)}
+          onSave={data => {
+            addAbsence({ salarie_id: absenceModal.id, ...data });
+            reload();
+            setAbsenceModal(null);
+            toast.success("Absence enregistrée");
+          }}
         />
       )}
+
+      {assignModal && (
+        <AssignModal
+          salarieId={assignModal.salarieId}
+          date={assignModal.date}
+          employes={employes}
+          chantiers={chantiersActifs}
+          clients={clients}
+          affectations={affectations}
+          absences={absences}
+          onAssign={chantierId => {
+            applyAffectation({ kind: "new", chantierId }, assignModal.salarieId, assignModal.date);
+            setAssignModal(null);
+          }}
+          onClose={() => setAssignModal(null)}
+        />
+      )}
+
+      {suggestionFor && (
+        <SuggestionPanel
+          chantier={suggestionFor.chantier}
+          date={suggestionFor.date}
+          suggestions={suggestions}
+          onAccept={accepterSuggestion}
+          onClose={() => setSuggestionFor(null)}
+        />
+      )}
+
+      {editEmpId && employes.find(e => e.id === editEmpId) && (
+        <EditEmployeModal
+          employe={employes.find(e => e.id === editEmpId)!}
+          onClose={() => setEditEmpId(null)}
+          onSave={data => {
+            updateEmployeRH(editEmpId, data);
+            reload();
+            setEditEmpId(null);
+            toast.success("Salarié mis à jour");
+          }}
+        />
+      )}
+
+      <AbsenceFloatingList
+        absences={absences}
+        employes={employes}
+        onRemove={id => { removeAbsence(id); reload(); }}
+      />
+
+      <DragOverlay>
+        {dragActive && dragActive.kind === "new" && (
+          <div style={{ background: "#E2001A", color: "white", padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, boxShadow: "0 4px 12px rgba(0,0,0,.2)" }}>
+            {chantiers.find(c => c.id === dragActive.chantierId)?.nature_travaux ?? "Chantier"}
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+// ── Petits boutons ────────────────────────────────────────────────────────────
+
+function NavBtn({ onClick, icon }: { onClick: () => void; icon: React.ReactNode }) {
+  return (
+    <button onClick={onClick} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "white", border: "1px solid #E5E0DA", cursor: "pointer", color: "#4A453F" }}>
+      {icon}
+    </button>
+  );
+}
+
+function ActionBtn({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, background: "white", border: "1px solid #E5E0DA", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#4A453F" }}>
+      {icon}{label}
+    </button>
+  );
+}
+
+// ── Cellule grille ────────────────────────────────────────────────────────────
+
+function GridCell({
+  salarieId, date, absente, affectations, chantiers, clients, employe, onRemove, onTap,
+}: {
+  salarieId: string; date: string;
+  absente: Absence | null;
+  affectations: Affectation[];
+  chantiers: Chantier[]; clients: Client[];
+  employe: EmployeRH;
+  onRemove: (id: string) => void;
+  onTap: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `cell-${salarieId}-${date}`,
+    data: { salarieId, date } satisfies DropData,
+  });
+
+  const hasConflict = affectations.length > 1;
+
+  return (
+    <td
+      ref={setNodeRef}
+      style={{ padding: 3, borderBottom: "1px solid #F0EBE5", verticalAlign: "top", minWidth: 80, background: isOver ? "rgba(226,0,26,.06)" : absente ? "rgba(139,132,125,.06)" : "transparent", transition: "background .15s", cursor: absente ? "default" : "pointer" }}
+      onClick={absente ? undefined : onTap}
+    >
+      {absente ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 6px", borderRadius: 5, background: "rgba(139,132,125,.12)" }} title={`Absent – ${MOTIFS[absente.motif]}`}>
+          <UserX size={11} style={{ color: "#8B847D", flexShrink: 0 }} />
+          <span style={{ fontSize: 10, color: "#8B847D" }}>{MOTIFS[absente.motif]}</span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {affectations.map(a => (
+            <AffectationPill
+              key={a.id}
+              affectation={a}
+              chantier={chantiers.find(c => c.id === a.chantier_id)}
+              client={clients.find(c => c.id === chantiers.find(x => x.id === a.chantier_id)?.client_id)}
+              employe={employe}
+              conflict={hasConflict}
+              onRemove={() => onRemove(a.id)}
+            />
+          ))}
+          {affectations.length === 0 && (
+            <div style={{ height: 28, borderRadius: 5, border: "1px dashed #D5CFC8", display: "flex", alignItems: "center", justifyContent: "center", color: "#C5BDB5" }}>
+              <Plus size={12} />
+            </div>
+          )}
+        </div>
+      )}
+    </td>
+  );
+}
+
+// ── Pill d'affectation ────────────────────────────────────────────────────────
+
+function AffectationPill({
+  affectation, chantier, client, employe, conflict, onRemove,
+}: {
+  affectation: Affectation;
+  chantier?: Chantier;
+  client?: Client;
+  employe: EmployeRH;
+  conflict: boolean;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `aff-${affectation.id}`,
+    data: { kind: "move", affectationId: affectation.id, chantierId: affectation.chantier_id } satisfies DragData,
+  });
+
+  let dist: string | null = null;
+  if (employe.latitude_domicile && employe.longitude_domicile && chantier?.latitude && chantier?.longitude) {
+    dist = fmtDist(haversineKm(employe.latitude_domicile, employe.longitude_domicile, chantier.latitude, chantier.longitude));
+  }
+
+  const conflitMetier = chantier?.metier_requis && employe.metier && chantier.metier_requis !== employe.metier;
+  const couleur = chantier ? couleurEmp(chantier.id) : "#8B847D";
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 6px", borderRadius: 5, background: `${couleur}18`, border: `1px solid ${conflict || conflitMetier ? "#FB8C00" : couleur}44`, fontSize: 10, cursor: "grab", opacity: isDragging ? 0.4 : 1, transform: CSS.Translate.toString(transform), userSelect: "none" }}
+      title={chantier?.nature_travaux ?? ""}
+    >
+      {(conflict || conflitMetier) && <AlertTriangle size={9} style={{ color: "#FB8C00", flexShrink: 0 }} />}
+      <span style={{ color: couleur, fontWeight: 700, flexShrink: 0, fontSize: 9 }}>{client?.nom?.slice(0, 6) ?? "—"}</span>
+      <span style={{ color: "#4A453F", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 56 }}>{chantier?.nature_travaux?.slice(0, 10) ?? "—"}</span>
+      {dist && <span style={{ color: "#8B847D", fontSize: 9, flexShrink: 0 }}>·{dist}</span>}
+      <button onClick={e => { e.stopPropagation(); onRemove(); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#C5BDB5", padding: 0, lineHeight: 1 }} title="Retirer">
+        <X size={10} />
+      </button>
     </div>
   );
 }
 
-function Cell({
-  employeId,
-  date,
-  absent,
-  affectations,
-  chantierById,
-  clientById,
-  onTap,
-  onRemove,
+// ── Panneau chantiers ─────────────────────────────────────────────────────────
+
+function PanneauChantiers({
+  chantiers, clients, affectations, onSuggestion, weekDates,
 }: {
-  employeId: string;
-  date: string;
-  absent: boolean;
+  chantiers: Chantier[];
+  clients: Client[];
   affectations: Affectation[];
-  chantierById: Record<string, Chantier>;
-  clientById: Record<string, Client>;
-  onTap: () => void;
+  onSuggestion: (ch: Chantier, date: string) => void;
+  weekDates: string[];
+}) {
+  const today = fmtDate(new Date());
+  return (
+    <div style={{ width: 200, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#8B847D", textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 4px 4px" }}>Chantiers actifs</div>
+      {chantiers.length === 0 && <div style={{ fontSize: 12, color: "#8B847D", padding: "8px 4px" }}>Aucun chantier signé</div>}
+      {chantiers.map(ch => {
+        const nom = clients.find(c => c.id === ch.client_id)?.nom ?? "—";
+        const totalSem = affectations.filter(a => a.chantier_id === ch.id && weekDates.includes(a.date)).length;
+        const requis = ch.nb_personnes_requises ?? 0;
+        return (
+          <ChantierCard
+            key={ch.id}
+            chantier={ch}
+            clientNom={nom}
+            totalSemaine={totalSem}
+            requiSemaine={requis}
+            onSuggestion={() => onSuggestion(ch, today)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function ChantierCard({
+  chantier, clientNom, totalSemaine, requiSemaine, onSuggestion,
+}: {
+  chantier: Chantier; clientNom: string;
+  totalSemaine: number; requiSemaine: number;
+  onSuggestion: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `ch-${chantier.id}`,
+    data: { kind: "new", chantierId: chantier.id } satisfies DragData,
+  });
+
+  const couleur = couleurEmp(chantier.id);
+  const ok = requiSemaine === 0 || totalSemaine >= requiSemaine;
+
+  return (
+    <div ref={setNodeRef} {...listeners} {...attributes} style={{ padding: "7px 9px", borderRadius: 8, cursor: "grab", background: "white", border: `1.5px solid ${couleur}44`, opacity: isDragging ? 0.4 : 1, transform: CSS.Translate.toString(transform), boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: couleur, flexShrink: 0, marginTop: 3 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#1A1714", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clientNom}</div>
+          <div style={{ fontSize: 10, color: "#8B847D", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chantier.nature_travaux}</div>
+          {chantier.metier_requis && <div style={{ fontSize: 9, color: couleur, fontWeight: 600, marginTop: 1 }}>{chantier.metier_requis}</div>}
+        </div>
+      </div>
+      {requiSemaine > 0 && (
+        <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 5 }}>
+          <div style={{ flex: 1, height: 3, background: "#F0EBE5", borderRadius: 2 }}>
+            <div style={{ width: `${Math.min(100, (totalSemaine / requiSemaine) * 100)}%`, height: "100%", borderRadius: 2, background: ok ? "#43A047" : "#E2001A" }} />
+          </div>
+          <span style={{ fontSize: 9, color: ok ? "#43A047" : "#E2001A", fontWeight: 700 }}>{totalSemaine}/{requiSemaine}</span>
+        </div>
+      )}
+      <button
+        onPointerDown={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); onSuggestion(); }}
+        style={{ marginTop: 5, width: "100%", padding: "2px 0", borderRadius: 5, fontSize: 9, fontWeight: 600, background: "rgba(226,0,26,.07)", border: "none", color: "#E2001A", cursor: "pointer" }}
+      >
+        Suggestions IA
+      </button>
+    </div>
+  );
+}
+
+// ── Panneau suggestions ───────────────────────────────────────────────────────
+
+function SuggestionPanel({
+  chantier, date, suggestions, onAccept, onClose,
+}: {
+  chantier: Chantier; date: string;
+  suggestions: SuggestionItem[];
+  onAccept: (item: SuggestionItem) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 24, width: "100%", maxWidth: 440, boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+          <div>
+            <h2 className="font-display" style={{ fontSize: 17, fontWeight: 700, color: "#1A1714" }}>Suggestions IA</h2>
+            <p style={{ fontSize: 12, color: "#8B847D", marginTop: 2 }}>
+              {chantier.nature_travaux} · {format(parseISO(date), "dd MMMM", { locale: fr })}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B847D" }}><X size={18} /></button>
+        </div>
+
+        {suggestions.length === 0 ? (
+          <p style={{ fontSize: 13, color: "#8B847D", textAlign: "center", padding: "20px 0" }}>Aucun salarié disponible ce jour</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {suggestions.map((item, i) => (
+              <div key={item.employe.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${i === 0 ? "#E2001A" : "#E5E0DA"}`, background: i === 0 ? "rgba(226,0,26,.04)" : "white" }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, background: item.couleur, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 12, fontWeight: 700 }}>
+                  {initiales(item.employe.nom, item.employe.prenom)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1714" }}>
+                    {item.employe.prenom} {item.employe.nom}
+                    {i === 0 && <span style={{ marginLeft: 6, fontSize: 10, color: "#E2001A", fontWeight: 700 }}>Recommandé</span>}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#8B847D", marginTop: 2 }}>{item.raisons.join(" · ")}</div>
+                  <div style={{ marginTop: 3, height: 3, borderRadius: 2, background: "#F0EBE5" }}>
+                    <div style={{ height: "100%", borderRadius: 2, background: item.couleur, width: `${Math.min(100, item.score)}%` }} />
+                  </div>
+                </div>
+                <button onClick={() => onAccept(item)} style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: i === 0 ? "#E2001A" : "#F0EBE5", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: i === 0 ? "white" : "#4A453F" }}>
+                  <Check size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p style={{ fontSize: 11, color: "#C5BDB5", marginTop: 12, textAlign: "center" }}>
+          Score : métier · distance domicile/chantier · charge hebdomadaire
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal absence ─────────────────────────────────────────────────────────────
+
+function AbsenceModal({
+  employe, onClose, onSave,
+}: {
+  employe: EmployeRH;
+  onClose: () => void;
+  onSave: (data: Omit<Absence, "id" | "salarie_id">) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [debut, setDebut] = useState(today);
+  const [fin, setFin] = useState(today);
+  const [motif, setMotif] = useState<Absence["motif"]>("conges");
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: "16px 16px 0 0", padding: 24, width: "100%", maxWidth: 480, boxShadow: "0 -4px 40px rgba(0,0,0,.2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center" }}>
+          <h3 className="font-display" style={{ fontSize: 16, fontWeight: 700 }}>Absence — {employe.prenom} {employe.nom}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B847D" }}><X size={18} /></button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Début</label>
+            <input type="date" value={debut} onChange={e => setDebut(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13 }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Fin</label>
+            <input type="date" value={fin} onChange={e => setFin(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13 }} />
+          </div>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Motif</label>
+          <select value={motif} onChange={e => setMotif(e.target.value as Absence["motif"])} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13 }}>
+            {Object.entries(MOTIFS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+        <button onClick={() => onSave({ date_debut: debut, date_fin: fin, motif })} style={{ width: "100%", padding: "10px 0", borderRadius: 10, background: "#E2001A", color: "white", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>
+          Enregistrer l'absence
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal affectation mobile ──────────────────────────────────────────────────
+
+function AssignModal({
+  salarieId, date, employes, chantiers, clients, affectations, absences, onAssign, onClose,
+}: {
+  salarieId: string; date: string;
+  employes: EmployeRH[]; chantiers: Chantier[]; clients: Client[];
+  affectations: Affectation[]; absences: Absence[];
+  onAssign: (chantierId: string) => void;
+  onClose: () => void;
+}) {
+  const emp = employes.find(e => e.id === salarieId);
+  const abs = isAbsent(salarieId, date, absences);
+  const dejaChantiers = affectations.filter(a => a.salarie_id === salarieId && a.date === date).map(a => a.chantier_id);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: "16px 16px 0 0", padding: 20, width: "100%", maxWidth: 480, maxHeight: "80vh", overflow: "auto", boxShadow: "0 -4px 40px rgba(0,0,0,.2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14, alignItems: "center" }}>
+          <div>
+            <h3 className="font-display" style={{ fontSize: 15, fontWeight: 700 }}>Affecter {emp?.prenom} {emp?.nom}</h3>
+            <p style={{ fontSize: 12, color: "#8B847D" }}>{format(parseISO(date), "EEEE dd MMMM", { locale: fr })}</p>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B847D" }}><X size={18} /></button>
+        </div>
+
+        {abs && (
+          <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(139,132,125,.1)", marginBottom: 12, fontSize: 12, color: "#4A453F" }}>
+            <UserX size={12} style={{ display: "inline", marginRight: 4 }} />
+            Salarié absent ({MOTIFS[abs.motif]})
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {chantiers.map(ch => {
+            const nom = clients.find(c => c.id === ch.client_id)?.nom ?? "—";
+            const dejaAffecte = dejaChantiers.includes(ch.id);
+            return (
+              <button
+                key={ch.id}
+                onClick={() => !dejaAffecte && onAssign(ch.id)}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: dejaAffecte ? "rgba(67,160,71,.08)" : "white", border: `1.5px solid ${dejaAffecte ? "#43A047" : "#E5E0DA"}`, cursor: dejaAffecte ? "default" : "pointer", textAlign: "left" }}
+              >
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: couleurEmp(ch.id), flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1714" }}>{nom}</div>
+                  <div style={{ fontSize: 11, color: "#8B847D" }}>{ch.nature_travaux}</div>
+                </div>
+                {dejaAffecte && <Check size={14} style={{ color: "#43A047" }} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal édition salarié ─────────────────────────────────────────────────────
+
+function EditEmployeModal({
+  employe, onClose, onSave,
+}: {
+  employe: EmployeRH;
+  onClose: () => void;
+  onSave: (data: Partial<Omit<EmployeRH, "id" | "created_at">>) => void;
+}) {
+  const [metier, setMetier] = useState(employe.metier ?? "");
+  const [couleur, setCouleur] = useState(employe.couleur ?? couleurEmp(employe.id));
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 24, width: "100%", maxWidth: 380 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center" }}>
+          <h3 className="font-display" style={{ fontSize: 16, fontWeight: 700 }}>{employe.prenom} {employe.nom}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B847D" }}><X size={18} /></button>
+        </div>
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Métier / spécialité</label>
+        <select value={metier} onChange={e => setMetier(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13, marginBottom: 12 }}>
+          <option value="">— Non renseigné —</option>
+          {METIERS.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Couleur planning</label>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          {PALETTE.map(c => (
+            <button key={c} onClick={() => setCouleur(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: "none", cursor: "pointer", outline: couleur === c ? `3px solid ${c}` : "none", outlineOffset: 2 }} />
+          ))}
+        </div>
+        <button onClick={() => onSave({ metier: metier || null, couleur })} style={{ width: "100%", padding: "10px 0", borderRadius: 10, background: "#E2001A", color: "white", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Absences flottantes ───────────────────────────────────────────────────────
+
+function AbsenceFloatingList({
+  absences, employes, onRemove,
+}: {
+  absences: Absence[];
+  employes: EmployeRH[];
   onRemove: (id: string) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `${employeId}-${date}`, data: { employeId, date } });
+  const [open, setOpen] = useState(false);
+  if (absences.length === 0) return null;
   return (
-    <div
-      ref={setNodeRef}
-      onClick={() => affectations.length === 0 && !absent && onTap()}
-      className={cn(
-        "min-h-[72px] rounded border p-1 transition-colors",
-        absent
-          ? "bg-muted/80 border-dashed cursor-not-allowed"
-          : affectations.length === 0
-            ? "bg-muted/20 hover:bg-primary/5 cursor-pointer border-dashed"
-            : "bg-card",
-        isOver && !absent && "bg-primary/10 border-primary",
-      )}
-    >
-      {absent ? (
-        <div className="h-full flex items-center justify-center text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-          Absent
-        </div>
-      ) : affectations.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground/60">
-          +
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {affectations.map((a) => {
-            const ch = chantierById[a.chantier_id];
-            const cl = ch ? clientById[ch.client_id] : undefined;
+    <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 50 }}>
+      <button onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 24, background: "white", border: "1.5px solid #E5E0DA", boxShadow: "0 4px 16px rgba(0,0,0,.1)", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#4A453F" }}>
+        <UserX size={14} style={{ color: "#8B847D" }} />
+        {absences.length} absence{absences.length > 1 ? "s" : ""}
+      </button>
+      {open && (
+        <div style={{ position: "absolute", bottom: 48, right: 0, background: "white", borderRadius: 12, padding: 12, boxShadow: "0 8px 32px rgba(0,0,0,.15)", width: 280, border: "1px solid #E5E0DA" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#8B847D", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Absences enregistrées</div>
+          {absences.map(a => {
+            const emp = employes.find(e => e.id === a.salarie_id);
             return (
-              <AffectationChip
-                key={a.id}
-                affectation={a}
-                clientNom={cl?.nom ?? "Client"}
-                nature={ch?.nature_travaux ?? ""}
-                onRemove={() => onRemove(a.id)}
-              />
+              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #F0EBE5" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1A1714" }}>{emp ? `${emp.prenom} ${emp.nom}` : "—"}</div>
+                  <div style={{ fontSize: 11, color: "#8B847D" }}>{MOTIFS[a.motif]} · {format(parseISO(a.date_debut), "dd/MM")} → {format(parseISO(a.date_fin), "dd/MM")}</div>
+                </div>
+                <button onClick={() => onRemove(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#C5BDB5" }}><X size={12} /></button>
+              </div>
             );
           })}
         </div>
@@ -726,273 +1002,98 @@ function Cell({
   );
 }
 
-function AffectationChip({
-  affectation,
-  clientNom,
-  nature,
-  onRemove,
+// ── Vue carte ─────────────────────────────────────────────────────────────────
+
+function CarteView({
+  chantiers, clients, employes, affectations, activeDay, onDayChange, days,
 }: {
-  affectation: Affectation;
-  clientNom: string;
-  nature: string;
-  onRemove: () => void;
+  chantiers: Chantier[];
+  clients: Client[];
+  employes: EmployeRH[];
+  affectations: Affectation[];
+  activeDay: string;
+  onDayChange: (d: string) => void;
+  days: Date[];
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `aff-${affectation.id}`,
-    data: { type: "move", affectationId: affectation.id, chantierId: affectation.chantier_id },
-  });
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
-    : undefined;
+  const chantiersJour = chantiers.filter(ch => affectations.some(a => a.chantier_id === ch.id && a.date === activeDay));
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "bg-primary/10 border-l-4 border-primary rounded px-1.5 py-1 text-[11px] cursor-grab active:cursor-grabbing relative group",
-        isDragging && "opacity-50",
-      )}
-    >
-      <div {...listeners} {...attributes}>
-        <div className="font-semibold truncate">{clientNom}</div>
-        <div className="text-muted-foreground truncate text-[10px]">{nature}</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {days.map(d => {
+          const ds = fmtDate(d);
+          const active = ds === activeDay;
+          return (
+            <button key={ds} onClick={() => onDayChange(ds)} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: active ? "#E2001A" : "white", color: active ? "white" : "#4A453F", boxShadow: active ? "0 2px 8px rgba(226,0,26,.3)" : "0 1px 3px rgba(0,0,0,.06)" }}>
+              {format(d, "EEE dd", { locale: fr })}
+            </button>
+          );
+        })}
       </div>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 hover:text-primary"
-        aria-label="Retirer"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </div>
-  );
-}
 
-function ChantierChip({
-  chantier,
-  client,
-  ville,
-}: {
-  chantier: Chantier;
-  client?: Client;
-  ville: string | null;
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `new-${chantier.id}`,
-    data: { type: "new", chantierId: chantier.id },
-  });
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
-    : undefined;
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      className={cn(
-        "rounded border-l-4 border-primary bg-primary/5 p-2 cursor-grab active:cursor-grabbing text-xs",
-        isDragging && "opacity-50",
-      )}
-    >
-      <div className="font-semibold text-sm">{client?.nom ?? "Client"}</div>
-      {ville && <div className="text-[11px] text-muted-foreground">{ville}</div>}
-      <div className="text-[11px] text-muted-foreground truncate">{chantier.nature_travaux}</div>
-      {chantier.duree_estimee && (
-        <div className="text-[10px] font-medium text-primary mt-1">⏱ {chantier.duree_estimee}</div>
-      )}
-    </div>
-  );
-}
-
-function AbsenceForm({
-  employe,
-  onCreated,
-}: {
-  employe: Employe;
-  onCreated: (a: Absence) => void;
-}) {
-  const [debut, setDebut] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [fin, setFin] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [motif, setMotif] = useState("Arrêt de travail");
-  const [saving, setSaving] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Non connecté");
-      const { data, error } = await supabase
-        .from("absences")
-        .insert({
-          user_id: u.user.id,
-          employe_id: employe.id,
-          date_debut: debut,
-          date_fin: fin,
-          motif,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      toast.success("Absence enregistrée");
-      onCreated(data as Absence);
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <form onSubmit={submit} className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Du</Label>
-          <Input type="date" value={debut} onChange={(e) => setDebut(e.target.value)} required />
+      {chantiersJour.length === 0 ? (
+        <div style={{ padding: 32, textAlign: "center", color: "#8B847D", fontSize: 13, background: "white", borderRadius: 12 }}>
+          Aucun chantier planifié ce jour
         </div>
-        <div>
-          <Label>Au</Label>
-          <Input type="date" value={fin} min={debut} onChange={(e) => setFin(e.target.value)} required />
-        </div>
-      </div>
-      <div>
-        <Label>Motif</Label>
-        <Select value={motif} onValueChange={setMotif}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Arrêt de travail">Arrêt de travail</SelectItem>
-            <SelectItem value="Congé">Congé</SelectItem>
-            <SelectItem value="Formation">Formation</SelectItem>
-            <SelectItem value="Autre">Autre</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <DialogFooter>
-        <Button type="submit" disabled={saving}>
-          {saving ? "Enregistrement…" : "Enregistrer l'absence"}
-        </Button>
-      </DialogFooter>
-      <p className="text-[11px] text-muted-foreground italic">
-        Si l'employé avait des chantiers planifiés, l'assistant IA proposera automatiquement une réorganisation.
-      </p>
-    </form>
-  );
-}
-
-function TeamPanel({ employes, onClose }: { employes: Employe[]; onClose: () => void }) {
-  const qc = useQueryClient();
-  const [nom, setNom] = useState("");
-  const [role, setRole] = useState("");
-  const [couleur, setCouleur] = useState(PALETTE[0]);
-
-  const ajouter = useMutation({
-    mutationFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Non connecté");
-      const { error } = await supabase
-        .from("employes")
-        .insert({ user_id: u.user.id, nom, role: role || null, couleur });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setNom(""); setRole("");
-      qc.invalidateQueries({ queryKey: ["employes"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const toggleActif = useMutation({
-    mutationFn: async ({ id, actif }: { id: string; actif: boolean }) => {
-      const { error } = await supabase.from("employes").update({ actif }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["employes"] }),
-  });
-
-  const supprimer = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("employes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["employes"] }),
-  });
-
-  return (
-    <DialogContent className="max-w-md">
-      <DialogHeader>
-        <DialogTitle className="font-display text-2xl">Mon équipe</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-2 max-h-72 overflow-y-auto">
-        {employes.length === 0 && (
-          <p className="text-sm italic text-muted-foreground">Aucun employé pour le moment.</p>
-        )}
-        {employes.map((e) => (
-          <div key={e.id} className="flex items-center gap-2 p-2 border rounded">
-            <span
-              className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ backgroundColor: e.couleur }}
-            >
-              {e.nom.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase()}
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold truncate">{e.nom}</div>
-              {e.role && <div className="text-[11px] text-muted-foreground">{e.role}</div>}
-            </div>
-            <Switch
-              checked={e.actif}
-              onCheckedChange={(v) => toggleActif.mutate({ id: e.id, actif: v })}
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={() => supprimer.mutate(e.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        ))}
-      </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (nom.trim()) ajouter.mutate();
-        }}
-        className="border-t pt-3 space-y-2"
-      >
-        <div className="font-display uppercase text-xs">Ajouter un employé</div>
-        <Input placeholder="Nom" value={nom} onChange={(e) => setNom(e.target.value)} required />
-        <Input placeholder="Rôle (plombier, apprenti…)" value={role} onChange={(e) => setRole(e.target.value)} />
-        <div>
-          <Label className="text-xs">Couleur</Label>
-          <div className="flex gap-1 flex-wrap mt-1">
-            {PALETTE.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCouleur(c)}
-                className={cn(
-                  "h-7 w-7 rounded-full border-2 transition",
-                  couleur === c ? "border-foreground scale-110" : "border-transparent",
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+          {chantiersJour.map(ch => {
+            const client = clients.find(c => c.id === ch.client_id);
+            const equipe = affectations
+              .filter(a => a.chantier_id === ch.id && a.date === activeDay)
+              .map(a => employes.find(e => e.id === a.salarie_id))
+              .filter(Boolean) as EmployeRH[];
+            const adresse = client?.adresse;
+            const gmaps = adresse ? `https://www.google.com/maps/search/${encodeURIComponent(adresse)}` : null;
+            return (
+              <div key={ch.id} style={{ background: "white", borderRadius: 12, padding: 16, border: "1.5px solid #E5E0DA", boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: couleurEmp(ch.id), flexShrink: 0, marginTop: 3 }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="font-display" style={{ fontSize: 14, fontWeight: 700, color: "#1A1714" }}>{client?.nom ?? "—"}</div>
+                    <div style={{ fontSize: 12, color: "#8B847D" }}>{ch.nature_travaux}</div>
+                    {ch.metier_requis && <div style={{ fontSize: 11, color: couleurEmp(ch.id), fontWeight: 600, marginTop: 1 }}>{ch.metier_requis}</div>}
+                  </div>
+                </div>
+                {adresse && (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 10 }}>
+                    <MapPin size={12} style={{ color: "#8B847D", flexShrink: 0, marginTop: 1 }} />
+                    <span style={{ fontSize: 12, color: "#4A453F" }}>{adresse}</span>
+                  </div>
                 )}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
+                  {equipe.map(emp => (
+                    <div key={emp.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 20, background: `${couleurEmp(emp.id, emp.couleur)}18`, border: `1px solid ${couleurEmp(emp.id, emp.couleur)}33` }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: couleurEmp(emp.id, emp.couleur) }} />
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "#4A453F" }}>{emp.prenom} {emp.nom}</span>
+                    </div>
+                  ))}
+                </div>
+                {gmaps && (
+                  <a href={gmaps} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#E2001A", textDecoration: "none" }}>
+                    <Navigation size={11} />
+                    Ouvrir dans Google Maps
+                  </a>
+                )}
+              </div>
+            );
+          })}
         </div>
-        <DialogFooter className="gap-2 flex-wrap">
-          <Button type="button" variant="outline" onClick={onClose}>Fermer</Button>
-          <Button type="submit" disabled={!nom.trim() || ajouter.isPending}>
-            <Plus className="h-4 w-4 mr-2" />
-            {ajouter.isPending ? "Ajout…" : "Ajouter"}
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
+      )}
+    </div>
+  );
+}
+
+// ── État vide ─────────────────────────────────────────────────────────────────
+
+function EtatVide() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 12 }}>
+      <CalendarDays size={48} style={{ color: "#C5BDB5" }} />
+      <h2 className="font-display" style={{ fontSize: 20, fontWeight: 700, color: "#1A1714" }}>Aucune donnée à afficher</h2>
+      <p style={{ fontSize: 13, color: "#8B847D", textAlign: "center", maxWidth: 320 }}>
+        Ajoutez des salariés dans <strong>RH & Juridique</strong> et des chantiers dans <strong>PV & Devis</strong> pour commencer le planning.
+      </p>
+    </div>
   );
 }
