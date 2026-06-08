@@ -429,7 +429,7 @@ function NouveauDossierDialog({ onClose, clients }: { onClose: () => void; clien
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Non connecté");
+      if (!u.user) throw new Error("Session expirée — merci de te reconnecter.");
 
       let clientId: string;
       if (isNew) {
