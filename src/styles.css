@@ -5,20 +5,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -60,94 +46,102 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Statuts CAPEB */
+  --color-status-green: var(--status-green);
+  --color-status-green-bg: var(--status-green-bg);
+  --color-status-amber: var(--status-amber);
+  --color-status-amber-bg: var(--status-amber-bg);
+  --color-status-blue: var(--status-blue);
+  --color-status-blue-bg: var(--status-blue-bg);
+  --color-status-violet: var(--status-violet);
+  --color-status-violet-bg: var(--status-violet-bg);
 }
 
 :root {
-  --radius: 0.625rem;
-  /* CAPEB Adour-Pyrénées : rouge #E2001A + fond chaud #F5F2EE */
-  --background: oklch(0.957 0.005 60);
-  --foreground: oklch(0.18 0.02 30);
+  /* Arrondis — cartes 14px, boutons 10px */
+  --radius: 0.875rem;
+
+  /* Fond chaud #FAF8F5 */
+  --background: oklch(0.981 0.005 75);
+  --foreground: oklch(0.15 0.018 35);
+
+  /* Cartes blanches */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 30);
+  --card-foreground: oklch(0.15 0.018 35);
+
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 30);
-  --primary: oklch(0.553 0.225 28);
+  --popover-foreground: oklch(0.15 0.018 35);
+
+  /* Rouge CAPEB #E2001A */
+  --primary: oklch(0.52 0.22 28);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.93 0.01 60);
-  --secondary-foreground: oklch(0.2 0.02 30);
-  --muted: oklch(0.93 0.005 60);
-  --muted-foreground: oklch(0.45 0.02 40);
-  --accent: oklch(0.93 0.05 28);
-  --accent-foreground: oklch(0.25 0.1 28);
-  --destructive: oklch(0.553 0.225 28);
+
+  /* Surfaces secondaires */
+  --secondary: oklch(0.955 0.008 75);
+  --secondary-foreground: oklch(0.25 0.018 35);
+
+  /* Muted — fond léger */
+  --muted: oklch(0.955 0.006 75);
+  --muted-foreground: oklch(0.50 0.018 40);
+
+  /* Accent */
+  --accent: oklch(0.955 0.008 75);
+  --accent-foreground: oklch(0.25 0.018 35);
+
+  --destructive: oklch(0.52 0.22 28);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.88 0.01 60);
-  --input: oklch(0.88 0.01 60);
-  --ring: oklch(0.553 0.225 28);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.553 0.225 28);
+
+  /* Bordures #ECE7E1 */
+  --border: oklch(0.918 0.012 75);
+  --input: oklch(0.918 0.012 75);
+  --ring: oklch(0.52 0.22 28);
+
+  /* Charts */
+  --chart-1: oklch(0.52 0.22 28);
+  --chart-2: oklch(0.52 0.16 220);
+  --chart-3: oklch(0.55 0.14 150);
+  --chart-4: oklch(0.65 0.16 85);
+  --chart-5: oklch(0.50 0.18 300);
+
+  /* Sidebar rouge */
+  --sidebar: oklch(0.52 0.22 28);
   --sidebar-foreground: oklch(1 0 0);
   --sidebar-primary: oklch(1 0 0);
-  --sidebar-primary-foreground: oklch(0.553 0.225 28);
-  --sidebar-accent: oklch(0.48 0.21 28);
+  --sidebar-primary-foreground: oklch(0.52 0.22 28);
+  --sidebar-accent: oklch(0.42 0.20 28);
   --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.48 0.21 28);
+  --sidebar-border: oklch(0.42 0.20 28);
   --sidebar-ring: oklch(1 0 0);
-}
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Statuts */
+  --status-green: oklch(0.45 0.13 155);
+  --status-green-bg: oklch(0.955 0.04 155);
+  --status-amber: oklch(0.58 0.14 75);
+  --status-amber-bg: oklch(0.975 0.04 75);
+  --status-blue: oklch(0.45 0.16 250);
+  --status-blue-bg: oklch(0.955 0.04 250);
+  --status-violet: oklch(0.42 0.16 295);
+  --status-violet-bg: oklch(0.955 0.04 295);
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
+    box-sizing: border-box;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: "Work Sans", system-ui, sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
   }
 
   .font-display {
     font-family: "Oswald", "Work Sans", sans-serif;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
   }
 
@@ -157,8 +151,103 @@
 
   .ai-fill {
     background-color: oklch(0.96 0.05 28);
-    color: oklch(0.4 0.2 28);
+    color: oklch(0.40 0.20 28);
     padding: 0 4px;
     border-radius: 3px;
+  }
+}
+
+/* =============================================
+   OMBRES EN COUCHES — DESIGN SYSTEM
+   ============================================= */
+@layer utilities {
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(26,23,20,.06), 0 6px 16px rgba(26,23,20,.05);
+  }
+  .shadow-card-hover {
+    box-shadow: 0 4px 12px rgba(26,23,20,.10), 0 12px 28px rgba(26,23,20,.08);
+  }
+  .shadow-btn {
+    box-shadow: 0 1px 3px rgba(26,23,20,.18), 0 2px 6px rgba(26,23,20,.10);
+  }
+  .shadow-sidebar {
+    box-shadow: inset -1px 0 0 rgba(0,0,0,.12), 2px 0 12px rgba(26,23,20,.15);
+  }
+  .shadow-topbar {
+    box-shadow: 0 1px 0 rgba(26,23,20,.06), 0 2px 8px rgba(26,23,20,.04);
+  }
+}
+
+/* =============================================
+   CARTE — COMPOSANT DE BASE
+   ============================================= */
+@layer components {
+  .capeb-card {
+    background: white;
+    border-radius: 14px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 1px 3px rgba(26,23,20,.06), 0 6px 16px rgba(26,23,20,.05);
+    transition: box-shadow 150ms ease, transform 150ms ease, border-color 150ms ease;
+  }
+  .capeb-card:hover {
+    box-shadow: 0 4px 12px rgba(26,23,20,.10), 0 12px 28px rgba(26,23,20,.08);
+    transform: translateY(-2px);
+    border-color: oklch(0.88 0.012 75);
+  }
+
+  /* Bouton principal CAPEB */
+  .btn-capeb {
+    background: linear-gradient(135deg, #EA1227 0%, #D2001A 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    min-height: 44px;
+    padding: 0 20px;
+    font-family: "Oswald", sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 13px;
+    box-shadow: 0 1px 3px rgba(26,23,20,.18), 0 2px 6px rgba(26,23,20,.10);
+    transition: background 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+    cursor: pointer;
+  }
+  .btn-capeb:hover {
+    background: linear-gradient(135deg, #D2001A 0%, #B00013 100%);
+    box-shadow: 0 2px 6px rgba(226,0,26,.30), 0 4px 12px rgba(226,0,26,.18);
+  }
+  .btn-capeb:active {
+    transform: scale(0.98);
+  }
+
+  /* Pastille de statut */
+  .badge-green  { color: oklch(0.45 0.13 155); background: oklch(0.955 0.04 155); }
+  .badge-amber  { color: oklch(0.58 0.14 75);  background: oklch(0.975 0.04 75);  }
+  .badge-blue   { color: oklch(0.45 0.16 250); background: oklch(0.955 0.04 250); }
+  .badge-violet { color: oklch(0.42 0.16 295); background: oklch(0.955 0.04 295); }
+  .badge-red    { color: oklch(0.52 0.22 28);  background: oklch(0.975 0.04 28);  }
+  .badge-slate  { color: oklch(0.45 0.02 250); background: oklch(0.94 0.01 250);  }
+
+  /* Animation d'apparition en cascade */
+  .fade-in-up {
+    animation: fadeInUp 300ms ease both;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* =============================================
+   OVERRIDE GLOBAL shadcn/ui
+   ============================================= */
+
+/* Boutons primaires → dégradé CAPEB */
+@layer components {
+  button[data-slot="button"].bg-primary,
+  .bg-primary[class*="button"],
+  [class*="Button"][class*="primary"] {
+    background: linear-gradient(135deg, #EA1227 0%, #D2001A 100%) !important;
+    box-shadow: 0 1px 3px rgba(26,23,20,.18), 0 2px 6px rgba(26,23,20,.10) !important;
+    border-radius: 10px !important;
   }
 }
