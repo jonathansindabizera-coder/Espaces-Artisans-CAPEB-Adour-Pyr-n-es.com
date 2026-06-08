@@ -16,6 +16,7 @@ import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedPvRouteImport } from './routes/_authenticated/pv'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
 import { Route as AuthenticatedFormationsRouteImport } from './routes/_authenticated/formations'
+import { Route as AuthenticatedAvantagesRouteImport } from './routes/_authenticated/avantages'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -51,10 +52,16 @@ const AuthenticatedFormationsRoute = AuthenticatedFormationsRouteImport.update({
   path: '/formations',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAvantagesRoute = AuthenticatedAvantagesRouteImport.update({
+  id: '/avantages',
+  path: '/avantages',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/avantages': typeof AuthenticatedAvantagesRoute
   '/formations': typeof AuthenticatedFormationsRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/avantages': typeof AuthenticatedAvantagesRoute
   '/formations': typeof AuthenticatedFormationsRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
@@ -73,6 +81,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/avantages': typeof AuthenticatedAvantagesRoute
   '/_authenticated/formations': typeof AuthenticatedFormationsRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
   '/_authenticated/pv': typeof AuthenticatedPvRoute
@@ -80,14 +89,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/formations' | '/planning' | '/pv' | '/rh'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/avantages'
+    | '/formations'
+    | '/planning'
+    | '/pv'
+    | '/rh'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/formations' | '/planning' | '/pv' | '/rh'
+  to: '/' | '/auth' | '/avantages' | '/formations' | '/planning' | '/pv' | '/rh'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/avantages'
     | '/_authenticated/formations'
     | '/_authenticated/planning'
     | '/_authenticated/pv'
@@ -151,10 +168,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/avantages': {
+      id: '/_authenticated/avantages'
+      path: '/avantages'
+      fullPath: '/avantages'
+      preLoaderRoute: typeof AuthenticatedAvantagesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAvantagesRoute: typeof AuthenticatedAvantagesRoute
   AuthenticatedFormationsRoute: typeof AuthenticatedFormationsRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
   AuthenticatedPvRoute: typeof AuthenticatedPvRoute
@@ -162,6 +187,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAvantagesRoute: AuthenticatedAvantagesRoute,
   AuthenticatedFormationsRoute: AuthenticatedFormationsRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
   AuthenticatedPvRoute: AuthenticatedPvRoute,

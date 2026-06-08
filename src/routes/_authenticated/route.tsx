@@ -19,6 +19,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/planning":   "Planning chantiers",
   "/formations": "Formations",
   "/rh":         "RH & Juridique",
+  "/avantages":  "Avantages CAPEB",
 };
 
 function TopBar() {

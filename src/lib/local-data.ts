@@ -183,3 +183,49 @@ export function addContratGenere(data: Omit<ContratGenere, "id" | "date_generati
   localStorage.setItem(K_CONTRATS, JSON.stringify(list));
   return c;
 }
+
+// ── Avantages CAPEB ───────────────────────────────────────────────────────────
+
+export type AvantageCapeb = {
+  id: string;
+  titre: string;
+  categorie: string;
+  description: string;
+  economie_min_pct: number | null;
+  economie_max_pct: number | null;
+  type_action: "lien_externe" | "code_promo" | "demande_rappel" | "comparatif_factures";
+  action_valeur: string;
+  partenaire_nom: string | null;
+  conditions: string;
+  date_maj: string;
+  actif: boolean;
+};
+
+const K_AVANTAGES = "ea_avantages_capeb";
+
+export function loadAvantages(): AvantageCapeb[] {
+  try { return JSON.parse(localStorage.getItem(K_AVANTAGES) ?? "[]"); }
+  catch { return []; }
+}
+export function replaceAvantages(list: AvantageCapeb[]): void {
+  localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
+}
+export function addAvantage(data: Omit<AvantageCapeb, "id">): AvantageCapeb {
+  const a: AvantageCapeb = { id: crypto.randomUUID(), ...data };
+  const list = loadAvantages();
+  list.push(a);
+  localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
+  return a;
+}
+export function updateAvantage(id: string, data: Partial<Omit<AvantageCapeb, "id">>): void {
+  const list = loadAvantages();
+  const i = list.findIndex(a => a.id === id);
+  if (i !== -1) {
+    list[i] = { ...list[i], ...data };
+    localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
+  }
+}
+export function removeAvantage(id: string): void {
+  const list = loadAvantages().filter(a => a.id !== id);
+  localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
+}
