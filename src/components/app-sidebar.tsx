@@ -163,7 +163,7 @@ export function AppSidebar() {
                   {nomAffiche}
                 </div>
                 <div className="truncate text-[11px] text-white/60 uppercase tracking-wide">
-                  {profile?.entreprise || "CAPEB Adour-Pyrénées"}
+                  CAPEB Adour-Pyrénées
                 </div>
               </div>
             )}
