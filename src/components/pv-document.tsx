@@ -160,8 +160,6 @@ export function PvDocumentDialog({
       return { destinataires, emailSent };
     },
     onSuccess: ({ destinataires, emailSent }) => {
-      qc.invalidateQueries({ queryKey: ["chantiers"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setConfirmation({ destinataires, emailSent });
     },
     onError: (e: Error) => toast.error(e.message),
