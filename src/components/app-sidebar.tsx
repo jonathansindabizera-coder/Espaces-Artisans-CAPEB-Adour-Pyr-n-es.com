@@ -1,14 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FileSignature, Calendar, GraduationCap, Hammer, Plus, Users, Gift } from "lucide-react";
+import { FileSignature, Calendar, GraduationCap, Hammer, Plus, Users, Gift, LayoutDashboard } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useState, useEffect } from "react";
 
 const NAV_ITEMS = [
-  { title: "PV & Suivi devis",    url: "/pv",          icon: FileSignature },
-  { title: "Planning chantiers",  url: "/planning",    icon: Calendar },
-  { title: "Formations",          url: "/formations",  icon: GraduationCap },
-  { title: "RH & Juridique",      url: "/rh",          icon: Users },
-  { title: "Avantages CAPEB",     url: "/avantages",   icon: Gift },
+  { title: "Tableau de bord",     url: "/tableau-de-bord", icon: LayoutDashboard },
+  { title: "PV & Suivi devis",    url: "/pv",              icon: FileSignature },
+  { title: "Planning chantiers",  url: "/planning",        icon: Calendar },
+  { title: "Formations",          url: "/formations",      icon: GraduationCap },
+  { title: "RH & Juridique",      url: "/rh",              icon: Users },
+  { title: "Avantages CAPEB",     url: "/avantages",       icon: Gift },
 ];
 
 function initiales(nom: string): string {
@@ -56,7 +57,7 @@ export function AppSidebar() {
       >
         {/* ── LOGO ── */}
         <div className="flex items-center gap-3 px-3 pt-5 pb-4">
-          <Link to="/pv" className="flex items-center gap-3 min-w-0" onClick={() => isMobile && setOpen(false)}>
+          <Link to="/tableau-de-bord" className="flex items-center gap-3 min-w-0" onClick={() => isMobile && setOpen(false)}>
             <div
               className="flex shrink-0 items-center justify-center rounded-xl bg-white"
               style={{
