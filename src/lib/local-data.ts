@@ -310,3 +310,125 @@ export function replaceAffectation(id: string, data: Partial<Omit<Affectation, "
     localStorage.setItem(K_AFFECTATIONS, JSON.stringify(list));
   }
 }
+
+// ── Planning : Ressources matérielles ────────────────────────────────────────
+
+export type Ressource = {
+  id: string;
+  nom: string;
+  type: "vehicule" | "machine" | "outillage";
+  reference: string | null;
+  actif: boolean;
+};
+
+export type AffectationRessource = {
+  id: string;
+  ressource_id: string;
+  chantier_id: string;
+  date: string;
+};
+
+const K_RESSOURCES     = "ea_ressources";
+const K_AFF_RESSOURCES = "ea_aff_ressources";
+
+export function loadRessources(): Ressource[] {
+  try { return JSON.parse(localStorage.getItem(K_RESSOURCES) ?? "[]"); }
+  catch { return []; }
+}
+export function addRessource(data: Omit<Ressource, "id">): Ressource {
+  const r: Ressource = { id: crypto.randomUUID(), ...data };
+  const list = loadRessources();
+  list.push(r);
+  localStorage.setItem(K_RESSOURCES, JSON.stringify(list));
+  return r;
+}
+export function updateRessource(id: string, data: Partial<Omit<Ressource, "id">>): void {
+  const list = loadRessources();
+  const i = list.findIndex(r => r.id === id);
+  if (i !== -1) { list[i] = { ...list[i], ...data }; localStorage.setItem(K_RESSOURCES, JSON.stringify(list)); }
+}
+export function removeRessource(id: string): void {
+  localStorage.setItem(K_RESSOURCES, JSON.stringify(loadRessources().filter(r => r.id !== id)));
+}
+
+export function loadAffectationsRessources(): AffectationRessource[] {
+  try { return JSON.parse(localStorage.getItem(K_AFF_RESSOURCES) ?? "[]"); }
+  catch { return []; }
+}
+export function addAffectationRessource(data: Omit<AffectationRessource, "id">): AffectationRessource {
+  const a: AffectationRessource = { id: crypto.randomUUID(), ...data };
+  const list = loadAffectationsRessources();
+  list.push(a);
+  localStorage.setItem(K_AFF_RESSOURCES, JSON.stringify(list));
+  return a;
+}
+export function removeAffectationRessource(id: string): void {
+  localStorage.setItem(K_AFF_RESSOURCES, JSON.stringify(loadAffectationsRessources().filter(a => a.id !== id)));
+}
+
+// ── Planning : Tâches chantier ────────────────────────────────────────────────
+
+export type TacheChantier = {
+  id: string;
+  chantier_id: string;
+  date: string;
+  description: string;
+  fait: boolean;
+  salarie_id: string | null;
+};
+
+const K_TACHES = "ea_taches_chantier";
+
+export function loadTaches(): TacheChantier[] {
+  try { return JSON.parse(localStorage.getItem(K_TACHES) ?? "[]"); }
+  catch { return []; }
+}
+export function addTache(data: Omit<TacheChantier, "id">): TacheChantier {
+  const t: TacheChantier = { id: crypto.randomUUID(), ...data };
+  const list = loadTaches();
+  list.push(t);
+  localStorage.setItem(K_TACHES, JSON.stringify(list));
+  return t;
+}
+export function updateTache(id: string, data: Partial<Omit<TacheChantier, "id">>): void {
+  const list = loadTaches();
+  const i = list.findIndex(t => t.id === id);
+  if (i !== -1) { list[i] = { ...list[i], ...data }; localStorage.setItem(K_TACHES, JSON.stringify(list)); }
+}
+export function removeTache(id: string): void {
+  localStorage.setItem(K_TACHES, JSON.stringify(loadTaches().filter(t => t.id !== id)));
+}
+
+// ── Planning : Pointages ──────────────────────────────────────────────────────
+
+export type Pointage = {
+  id: string;
+  chantier_id: string;
+  salarie_id: string;
+  date: string;
+  heures_prevues: number;
+  heures_reelles: number | null;
+  valide: boolean;
+};
+
+const K_POINTAGES = "ea_pointages";
+
+export function loadPointages(): Pointage[] {
+  try { return JSON.parse(localStorage.getItem(K_POINTAGES) ?? "[]"); }
+  catch { return []; }
+}
+export function addPointage(data: Omit<Pointage, "id">): Pointage {
+  const p: Pointage = { id: crypto.randomUUID(), ...data };
+  const list = loadPointages();
+  list.push(p);
+  localStorage.setItem(K_POINTAGES, JSON.stringify(list));
+  return p;
+}
+export function updatePointage(id: string, data: Partial<Omit<Pointage, "id">>): void {
+  const list = loadPointages();
+  const i = list.findIndex(p => p.id === id);
+  if (i !== -1) { list[i] = { ...list[i], ...data }; localStorage.setItem(K_POINTAGES, JSON.stringify(list)); }
+}
+export function removePointage(id: string): void {
+  localStorage.setItem(K_POINTAGES, JSON.stringify(loadPointages().filter(p => p.id !== id)));
+}

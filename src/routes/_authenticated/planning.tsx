@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
+import { PlanningMateriel } from "@/components/planning/PlanningMateriel";
+import { PlanningTaches } from "@/components/planning/PlanningTaches";
+import { PlanningPointage } from "@/components/planning/PlanningPointage";
+import { PlanningTableauBord } from "@/components/planning/PlanningTableauBord";
 import {
   DndContext,
   PointerSensor,
@@ -196,7 +200,7 @@ function PlanningPage() {
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
-  const [view, setView] = useState<"grille" | "carte">("grille");
+  const [tab, setTab] = useState<"grille" | "materiel" | "taches" | "pointage" | "carte" | "tableau-bord">("grille");
   const [employes, setEmployes] = useState<EmployeRH[]>([]);
   const [chantiers, setChantiers] = useState<Chantier[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -390,18 +394,50 @@ function PlanningPage() {
           <ActionBtn onClick={dupliquerSemainePrecedente} icon={<Copy size={14} />} label="Dupliquer sem. préc." />
           <ActionBtn onClick={envoyerPlanning} icon={<Mail size={14} />} label="Envoyer" />
 
-          {/* Vue */}
-          <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid #E5E0DA" }}>
-            {(["grille", "carte"] as const).map(v => (
-              <button key={v} onClick={() => setView(v)} style={{ padding: "5px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", background: view === v ? "#E2001A" : "white", color: view === v ? "white" : "#4A453F", border: "none" }}>
-                {v === "grille" ? "Grille" : "Carte"}
-              </button>
-            ))}
-          </div>
+        </div>
+
+        {/* ── Onglets ── */}
+        <div style={{ display: "flex", gap: 2, borderBottom: "2px solid #E5E0DA", overflowX: "auto" }}>
+          {([
+            { key: "grille",        label: "Grille" },
+            { key: "materiel",      label: "Matériel" },
+            { key: "taches",        label: "Tâches" },
+            { key: "pointage",      label: "Pointage" },
+            { key: "carte",         label: "Carte" },
+            { key: "tableau-bord",  label: "Tableau de bord" },
+          ] as const).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              style={{
+                padding: "8px 16px", fontSize: 13, fontWeight: tab === key ? 700 : 500, cursor: "pointer",
+                background: "transparent", border: "none", color: tab === key ? "#E2001A" : "#4A453F",
+                borderBottom: `2px solid ${tab === key ? "#E2001A" : "transparent"}`,
+                marginBottom: -2, whiteSpace: "nowrap",
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* ── Corps ── */}
-        {view === "grille" ? (
+        {tab === "materiel" && (
+          <PlanningMateriel weekStart={weekStart} onWeekChange={setWeekStart} />
+        )}
+        {tab === "taches" && (
+          <PlanningTaches weekStart={weekStart} />
+        )}
+        {tab === "pointage" && (
+          <PlanningPointage weekStart={weekStart} onWeekChange={setWeekStart} />
+        )}
+        {tab === "tableau-bord" && (
+          <PlanningTableauBord weekStart={weekStart} />
+        )}
+        {tab === "carte" && (
+          <CarteView chantiers={chantiersActifs} clients={clients} employes={employes} affectations={affectations} activeDay={activeDay} onDayChange={setActiveDay} days={days} />
+        )}
+        {tab === "grille" && (
           <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
             <PanneauChantiers
               chantiers={chantiersActifs}
@@ -485,16 +521,6 @@ function PlanningPage() {
               </table>
             </div>
           </div>
-        ) : (
-          <CarteView
-            chantiers={chantiersActifs}
-            clients={clients}
-            employes={employes}
-            affectations={affectations}
-            activeDay={activeDay}
-            onDayChange={setActiveDay}
-            days={days}
-          />
         )}
       </div>
 
