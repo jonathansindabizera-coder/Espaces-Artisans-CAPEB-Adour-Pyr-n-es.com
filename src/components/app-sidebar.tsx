@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FileSignature, Calendar, GraduationCap, Hammer, Plus, Users, Gift, LayoutDashboard } from "lucide-react";
+import { FileSignature, Calendar, GraduationCap, Hammer, Plus, Users, Gift, LayoutDashboard, HeartHandshake } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useState, useEffect } from "react";
 
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { title: "Planning chantiers",  url: "/planning",        icon: Calendar },
   { title: "Formations",          url: "/formations",      icon: GraduationCap },
   { title: "RH & Juridique",      url: "/rh",              icon: Users },
+  { title: "Nos services CAPEB",  url: "/services",        icon: HeartHandshake },
   { title: "Avantages CAPEB",     url: "/avantages",       icon: Gift },
 ];
 

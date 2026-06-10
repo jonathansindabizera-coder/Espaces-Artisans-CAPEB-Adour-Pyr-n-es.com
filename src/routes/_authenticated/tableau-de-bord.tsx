@@ -4,7 +4,7 @@ import { format, addDays, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   AlertTriangle, Calendar, ChevronRight, Users, FileSignature,
-  GraduationCap, Gift, Info, CheckCircle, Clock, Mail, Phone,
+  GraduationCap, Gift, Info, CheckCircle, Clock, Mail, Phone, HeartHandshake,
 } from "lucide-react";
 import {
   loadChantiers, loadClients, loadEmployesRH, loadAffectations, loadAbsences,
@@ -708,6 +708,13 @@ function TableauDeBordPage() {
                 ? [`${nbAvantages} avantage${nbAvantages > 1 ? "s" : ""} disponible${nbAvantages > 1 ? "s" : ""}`]
                 : ["Découvrez les avantages réservés aux artisans CAPEB"]
             }
+            vide={false}
+          />
+          <ResumCard
+            icon={<HeartHandshake size={18} />}
+            title="Nos services CAPEB"
+            lien="/services"
+            lignes={["Découvrez les 7 pôles d'accompagnement CAPEB"]}
             vide={false}
           />
         </div>
