@@ -1,8 +1,9 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useSidebar, SidebarProvider } from "@/components/ui/sidebar";
 import { Search, Bell, Menu } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { loadProfilEntreprise } from "@/lib/local-data";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 const ROUTE_LABELS: Record<string, string> = {
+  "/bienvenue":  "Bienvenue",
   "/pv":         "PV & Devis",
   "/planning":   "Planning chantiers",
   "/formations": "Formations",
@@ -107,6 +109,16 @@ function TopBar() {
 }
 
 function AuthenticatedLayout() {
+  const navigate = useNavigate();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (!loadProfilEntreprise().nom && path !== "/bienvenue") {
+      navigate({ to: "/bienvenue" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="min-h-screen flex w-full" style={{ background: "#FAF8F5" }}>
       <AppSidebar />

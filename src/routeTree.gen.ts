@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTableauDeBordRouteImport } from './routes/_authenticated/tableau-de-bord'
 import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedPvRouteImport } from './routes/_authenticated/pv'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
 import { Route as AuthenticatedFormationsRouteImport } from './routes/_authenticated/formations'
+import { Route as AuthenticatedBienvenueRouteImport } from './routes/_authenticated/bienvenue'
 import { Route as AuthenticatedAvantagesRouteImport } from './routes/_authenticated/avantages'
 
 const AuthRoute = AuthRouteImport.update({
@@ -32,6 +34,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTableauDeBordRoute =
+  AuthenticatedTableauDeBordRouteImport.update({
+    id: '/tableau-de-bord',
+    path: '/tableau-de-bord',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRhRoute = AuthenticatedRhRouteImport.update({
   id: '/rh',
   path: '/rh',
@@ -52,6 +60,11 @@ const AuthenticatedFormationsRoute = AuthenticatedFormationsRouteImport.update({
   path: '/formations',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBienvenueRoute = AuthenticatedBienvenueRouteImport.update({
+  id: '/bienvenue',
+  path: '/bienvenue',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAvantagesRoute = AuthenticatedAvantagesRouteImport.update({
   id: '/avantages',
   path: '/avantages',
@@ -62,19 +75,23 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/avantages': typeof AuthenticatedAvantagesRoute
+  '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/formations': typeof AuthenticatedFormationsRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
   '/rh': typeof AuthenticatedRhRoute
+  '/tableau-de-bord': typeof AuthenticatedTableauDeBordRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/avantages': typeof AuthenticatedAvantagesRoute
+  '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/formations': typeof AuthenticatedFormationsRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
   '/rh': typeof AuthenticatedRhRoute
+  '/tableau-de-bord': typeof AuthenticatedTableauDeBordRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,10 +99,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/avantages': typeof AuthenticatedAvantagesRoute
+  '/_authenticated/bienvenue': typeof AuthenticatedBienvenueRoute
   '/_authenticated/formations': typeof AuthenticatedFormationsRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
   '/_authenticated/pv': typeof AuthenticatedPvRoute
   '/_authenticated/rh': typeof AuthenticatedRhRoute
+  '/_authenticated/tableau-de-bord': typeof AuthenticatedTableauDeBordRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -93,22 +112,35 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/avantages'
+    | '/bienvenue'
     | '/formations'
     | '/planning'
     | '/pv'
     | '/rh'
+    | '/tableau-de-bord'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/avantages' | '/formations' | '/planning' | '/pv' | '/rh'
+  to:
+    | '/'
+    | '/auth'
+    | '/avantages'
+    | '/bienvenue'
+    | '/formations'
+    | '/planning'
+    | '/pv'
+    | '/rh'
+    | '/tableau-de-bord'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/avantages'
+    | '/_authenticated/bienvenue'
     | '/_authenticated/formations'
     | '/_authenticated/planning'
     | '/_authenticated/pv'
     | '/_authenticated/rh'
+    | '/_authenticated/tableau-de-bord'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -140,6 +172,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tableau-de-bord': {
+      id: '/_authenticated/tableau-de-bord'
+      path: '/tableau-de-bord'
+      fullPath: '/tableau-de-bord'
+      preLoaderRoute: typeof AuthenticatedTableauDeBordRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rh': {
       id: '/_authenticated/rh'
       path: '/rh'
@@ -168,6 +207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/bienvenue': {
+      id: '/_authenticated/bienvenue'
+      path: '/bienvenue'
+      fullPath: '/bienvenue'
+      preLoaderRoute: typeof AuthenticatedBienvenueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/avantages': {
       id: '/_authenticated/avantages'
       path: '/avantages'
@@ -180,18 +226,22 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAvantagesRoute: typeof AuthenticatedAvantagesRoute
+  AuthenticatedBienvenueRoute: typeof AuthenticatedBienvenueRoute
   AuthenticatedFormationsRoute: typeof AuthenticatedFormationsRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
   AuthenticatedPvRoute: typeof AuthenticatedPvRoute
   AuthenticatedRhRoute: typeof AuthenticatedRhRoute
+  AuthenticatedTableauDeBordRoute: typeof AuthenticatedTableauDeBordRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAvantagesRoute: AuthenticatedAvantagesRoute,
+  AuthenticatedBienvenueRoute: AuthenticatedBienvenueRoute,
   AuthenticatedFormationsRoute: AuthenticatedFormationsRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
   AuthenticatedPvRoute: AuthenticatedPvRoute,
   AuthenticatedRhRoute: AuthenticatedRhRoute,
+  AuthenticatedTableauDeBordRoute: AuthenticatedTableauDeBordRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

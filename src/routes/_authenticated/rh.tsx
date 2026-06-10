@@ -90,13 +90,13 @@ function RhPage() {
           onClick={() => setShowProfilModal(true)}
           className="flex items-center gap-2 rounded-[10px] px-4 py-2 text-sm font-medium transition-colors"
           style={{
-            background: profil.nom ? "rgba(226,0,26,.08)" : "#E2001A",
-            color: profil.nom ? "#E2001A" : "white",
-            border: profil.nom ? "1px solid rgba(226,0,26,.2)" : "none",
+            background: "rgba(226,0,26,.08)",
+            color: "#E2001A",
+            border: "1px solid rgba(226,0,26,.2)",
           }}
         >
           <Pencil className="h-3.5 w-3.5" />
-          {profil.nom ? "Mon entreprise" : "Configurer mon entreprise"}
+          Mon entreprise
         </button>
       </div>
 
@@ -272,6 +272,8 @@ function JuristeCard() {
 
 // ── Modal : profil entreprise ─────────────────────────────────────────────────
 
+const FORMES_JURIDIQUES = ["Auto-entrepreneur", "EI", "EIRL", "EURL", "SARL", "SAS", "SASU", "SA", "SCOP", "Autre"];
+
 function ProfilModal({
   profil,
   onClose,
@@ -286,10 +288,39 @@ function ProfilModal({
   const set = (k: keyof ProfilEntreprise, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
+  const inputCls = "w-full rounded-[10px] px-3 py-2.5 text-sm outline-none transition-all";
+  const inputSt = { background: "white", border: "1px solid #E5E0DA", color: "#1A1714" };
+  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.border = "1px solid #E2001A";
+    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(226,0,26,.1)";
+  };
+  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.border = "1px solid #E5E0DA";
+    e.currentTarget.style.boxShadow = "none";
+  };
+
+  const champ = (key: keyof ProfilEntreprise, label: string, placeholder: string, type = "text") => (
+    <div key={key}>
+      <label className="block text-xs font-medium mb-1" style={{ color: "#4A453F" }}>
+        {label}
+      </label>
+      <input
+        type={type}
+        value={form[key] ?? ""}
+        onChange={(e) => set(key, e.target.value)}
+        placeholder={placeholder}
+        className={inputCls}
+        style={inputSt}
+        onFocus={onFocus}
+        onBlur={onBlur}
+      />
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
       <div
-        className="w-full max-w-md rounded-[16px] p-6 shadow-2xl"
+        className="w-full max-w-lg rounded-[16px] p-6 shadow-2xl my-8"
         style={{ background: "#FAF8F5" }}
       >
         <div className="flex items-center justify-between mb-5">
@@ -307,43 +338,76 @@ function ProfilModal({
             if (!form.nom.trim()) { toast.error("Le nom est requis"); return; }
             onSave(form);
           }}
-          className="space-y-3"
+          className="space-y-5 max-h-[70vh] overflow-y-auto pr-1"
         >
-          {(
-            [
-              { key: "nom",       label: "Nom de l'entreprise *", placeholder: "SARL Dupont BTP" },
-              { key: "siret",     label: "SIRET",                  placeholder: "123 456 789 00012" },
-              { key: "adresse",   label: "Adresse",                placeholder: "12 rue des Artisans, 64000 Pau" },
-              { key: "telephone", label: "Téléphone",              placeholder: "05 59 00 00 00" },
-              { key: "email",     label: "Email",                  placeholder: "contact@votreentreprise.fr" },
-            ] as { key: keyof ProfilEntreprise; label: string; placeholder: string }[]
-          ).map(({ key, label, placeholder }) => (
-            <div key={key}>
+          {/* Identité */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8B847D" }}>
+              Identité
+            </h3>
+            {champ("nom", "Nom de l'entreprise *", "SARL Dupont BTP")}
+            <div>
               <label className="block text-xs font-medium mb-1" style={{ color: "#4A453F" }}>
-                {label}
+                Forme juridique
               </label>
-              <input
-                type="text"
-                value={form[key]}
-                onChange={(e) => set(key, e.target.value)}
-                placeholder={placeholder}
-                className="w-full rounded-[10px] px-3 py-2.5 text-sm outline-none transition-all"
-                style={{
-                  background: "white",
-                  border: "1px solid #E5E0DA",
-                  color: "#1A1714",
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.border = "1px solid #E2001A";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(226,0,26,.1)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.border = "1px solid #E5E0DA";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
+              <select
+                value={form.forme_juridique ?? ""}
+                onChange={(e) => set("forme_juridique", e.target.value)}
+                className={inputCls}
+                style={inputSt}
+                onFocus={onFocus}
+                onBlur={onBlur}
+              >
+                <option value="">-- Choisir --</option>
+                {FORMES_JURIDIQUES.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+            </div>
+            {champ("siret", "SIRET", "123 456 789 00012")}
+            {champ("code_ape", "Code APE / NAF", "4120A")}
+            {champ("tva", "N° TVA intracommunautaire", "FR12 345678901")}
+            {champ("gerant", "Gérant", "Jean Dupont")}
+          </div>
+
+          {/* Coordonnées */}
+          <div className="space-y-3 pt-3 border-t" style={{ borderColor: "#F0EBE4" }}>
+            <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8B847D" }}>
+              Coordonnées
+            </h3>
+            {champ("adresse", "Adresse", "12 rue des Artisans")}
+            <div className="grid grid-cols-2 gap-3">
+              {champ("code_postal", "Code postal", "64000")}
+              {champ("ville", "Ville", "Pau")}
+            </div>
+            {champ("telephone", "Téléphone", "05 59 00 00 00")}
+            {champ("email", "Email", "contact@votreentreprise.fr", "email")}
+            {champ("site_web", "Site web", "www.votreentreprise.fr")}
+          </div>
+
+          {/* Assurance & qualifications */}
+          <div className="space-y-3 pt-3 border-t" style={{ borderColor: "#F0EBE4" }}>
+            <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8B847D" }}>
+              Assurance &amp; qualifications
+            </h3>
+            {champ("assurance", "Assureur décennale", "MAAF Pro")}
+            {champ("num_police", "N° de police", "123456789")}
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "#4A453F" }}>
+                Qualifications / labels (RGE…)
+              </label>
+              <textarea
+                value={form.qualifications ?? ""}
+                onChange={(e) => set("qualifications", e.target.value)}
+                placeholder="RGE Qualibat, Qualifelec…"
+                rows={3}
+                className={inputCls}
+                style={{ ...inputSt, resize: "vertical" }}
+                onFocus={onFocus}
+                onBlur={onBlur}
               />
             </div>
-          ))}
+          </div>
 
           <div className="flex gap-2 pt-2">
             <button

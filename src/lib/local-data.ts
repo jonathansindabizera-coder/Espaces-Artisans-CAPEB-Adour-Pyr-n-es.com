@@ -120,6 +120,16 @@ export type ProfilEntreprise = {
   adresse: string;
   telephone: string;
   email: string;
+  forme_juridique?: string;
+  code_ape?: string;
+  tva?: string;
+  gerant?: string;
+  code_postal?: string;
+  ville?: string;
+  site_web?: string;
+  assurance?: string;
+  num_police?: string;
+  qualifications?: string;
 };
 
 export type ParametresCharges = {
@@ -153,11 +163,18 @@ export const PARAMETRES_CHARGES_DEFAUT: ParametresCharges = {
   cout_premier_embauche: 350,
 };
 
+const PROFIL_ENTREPRISE_DEFAUT: ProfilEntreprise = {
+  nom: "", siret: "", adresse: "", telephone: "", email: "",
+  forme_juridique: "", code_ape: "", tva: "", gerant: "",
+  code_postal: "", ville: "", site_web: "",
+  assurance: "", num_police: "", qualifications: "",
+};
+
 export function loadProfilEntreprise(): ProfilEntreprise {
   try {
     const s = localStorage.getItem(K_PROFIL);
-    return s ? JSON.parse(s) : { nom: "", siret: "", adresse: "", telephone: "", email: "" };
-  } catch { return { nom: "", siret: "", adresse: "", telephone: "", email: "" }; }
+    return s ? { ...PROFIL_ENTREPRISE_DEFAUT, ...JSON.parse(s) } : { ...PROFIL_ENTREPRISE_DEFAUT };
+  } catch { return { ...PROFIL_ENTREPRISE_DEFAUT }; }
 }
 export function saveProfilEntreprise(p: ProfilEntreprise): void {
   localStorage.setItem(K_PROFIL, JSON.stringify(p));
@@ -191,6 +208,9 @@ export function updateEmployeRH(id: string, data: Partial<Omit<EmployeRH, "id" |
     list[i] = { ...list[i], ...data };
     localStorage.setItem(K_EMPLOYES_RH, JSON.stringify(list));
   }
+}
+export function removeEmployeRH(id: string): void {
+  localStorage.setItem(K_EMPLOYES_RH, JSON.stringify(loadEmployesRH().filter(e => e.id !== id)));
 }
 
 export function loadContratsGeneres(): ContratGenere[] {
