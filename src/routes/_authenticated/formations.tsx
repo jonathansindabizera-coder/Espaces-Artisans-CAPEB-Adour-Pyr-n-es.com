@@ -10,6 +10,7 @@ import {
   FileText,
   Loader2,
   AlertCircle,
+  Mail,
 } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -18,18 +19,16 @@ import {
   fetchFormationsCapeb,
   type FormationCapeb,
 } from "@/lib/formations-fetch.functions";
+import { buildInscriptionMailto } from "@/lib/inscription-email.functions";
 
 export const Route = createFileRoute("/_authenticated/formations")({
   head: () => ({ meta: [{ title: "Formations – CAPEB" }] }),
   component: FormationsPage,
 });
 
-const LIEUX = ["Lescar", "Anglet", "Tarbes", "Pau"];
-
 // ── FormationsPage ────────────────────────────────────────────────────────────
 function FormationsPage() {
   const [filtreAVenir, setFiltreAVenir] = useState(true);
-  const [filtreLieu, setFiltreLieu]     = useState("tous");
   const [filtreTheme, setFiltreTheme]   = useState("tous");
   const [refreshKey, setRefreshKey]     = useState(0);
 
@@ -53,11 +52,10 @@ function FormationsPage() {
   const formationsFiltrees = useMemo(() => {
     return formations.filter(f => {
       if (filtreAVenir && f.date_debut && isPast(parseISO(f.date_debut))) return false;
-      if (filtreLieu !== "tous" && f.lieu !== filtreLieu) return false;
       if (filtreTheme !== "tous" && f.theme !== filtreTheme) return false;
       return true;
     });
-  }, [formations, filtreAVenir, filtreLieu, filtreTheme]);
+  }, [formations, filtreAVenir, filtreTheme]);
 
   return (
     <div className="space-y-5">
@@ -85,6 +83,29 @@ function FormationsPage() {
         </button>
       </div>
 
+      {/* Responsable formation */}
+      <div
+        className="bg-white rounded-[16px] border border-[#ECE7E1] p-[18px] flex flex-wrap items-center justify-between gap-4"
+        style={{ boxShadow: "0 1px 3px rgba(26,23,20,.06), 0 6px 16px rgba(26,23,20,.05)" }}
+      >
+        <div>
+          <p className="font-display text-[16px] font-semibold text-[#1A1714]">
+            Thierry JODAR — Responsable formation
+          </p>
+          <p className="text-sm text-[#8B847D] mt-[2px]">Adour-Pyrénées Conseil</p>
+          <p className="text-sm text-[#4A453F] mt-2">
+            Pour toute question ou inscription, contactez votre responsable formation.
+          </p>
+        </div>
+        <a
+          href="mailto:thierry.jodar@adour-pyrenees-conseil.fr"
+          className="flex items-center gap-2 text-[13px] font-semibold text-white rounded-[9px] px-[16px] py-[10px] transition-colors flex-shrink-0"
+          style={{ background: "linear-gradient(180deg,#EA1227,#D2001A)", boxShadow: "0 3px 10px rgba(226,0,26,.3)" }}
+        >
+          <Mail className="h-4 w-4" /> Contacter Thierry Jodar
+        </a>
+      </div>
+
       {/* Bandeau synchro vert */}
       <div
         className="flex flex-wrap items-center gap-[9px] text-[12.5px] rounded-[20px] px-[14px] py-[8px] font-semibold w-max max-w-full"
@@ -101,21 +122,6 @@ function FormationsPage() {
 
       {/* Filtres en pastilles */}
       <div className="flex flex-wrap gap-[9px] items-center">
-        {/* Lieux */}
-        {(["tous", ...LIEUX] as const).map(l => (
-          <FilterChip
-            key={l}
-            label={l === "tous" ? "Tous les lieux" : l}
-            active={filtreLieu === l}
-            onClick={() => setFiltreLieu(l)}
-          />
-        ))}
-
-        {/* Séparateur si thèmes disponibles */}
-        {themes.length > 0 && (
-          <span className="w-px self-stretch bg-[#ECE7E1] mx-1" />
-        )}
-
         {/* Thèmes dynamiques */}
         {themes.map(t => (
           <FilterChip
@@ -219,7 +225,7 @@ function FilterChip({ label, active, onClick, className }: {
 // ── CarteFormation ────────────────────────────────────────────────────────────
 function CarteFormation({ formation }: { formation: FormationCapeb }) {
   const dateStr = formation.date_debut
-    ? format(parseISO(formation.date_debut), "d MMMM yyyy", { locale: fr })
+    ? format(parseISO(formation.date_debut), "EEEE d MMMM yyyy", { locale: fr })
     : null;
   const passee = formation.date_debut ? isPast(parseISO(formation.date_debut)) : false;
 
@@ -303,9 +309,7 @@ function CarteFormation({ formation }: { formation: FormationCapeb }) {
             </a>
           )}
           <a
-            href={passee ? undefined : "https://www.capeb.fr/adour-pyrenees/nos-services?tab=training"}
-            target={passee ? undefined : "_blank"}
-            rel="noopener noreferrer"
+            href={passee ? undefined : buildInscriptionMailto(formation)}
             className={cn(
               "ml-auto text-[13px] font-semibold rounded-[9px] px-[16px] py-[10px] transition-colors",
               passee ? "bg-[#ECE7E1] text-[#8B847D] cursor-not-allowed pointer-events-none" : "text-white",

@@ -5,6 +5,26 @@ import { fr } from "date-fns/locale";
 
 const CAPEB_EMAIL = "thierry.jodar@adour-pyrenees-conseil.fr";
 
+/** Construit un lien mailto pré-rempli pour s'inscrire à une formation. */
+export function buildInscriptionMailto(formation: {
+  titre: string;
+  lieu: string | null;
+  date_debut: string | null;
+}): string {
+  const dateFr = formation.date_debut
+    ? format(parseISO(formation.date_debut), "EEEE d MMMM yyyy", { locale: fr })
+    : null;
+
+  const sujet = `Inscription formation : ${formation.titre}`;
+
+  let corps = `Bonjour, je souhaite m'inscrire à la formation "${formation.titre}"`;
+  if (dateFr) corps += ` du ${dateFr}`;
+  if (formation.lieu) corps += ` à ${formation.lieu}`;
+  corps += `. Merci de me recontacter.`;
+
+  return `mailto:${CAPEB_EMAIL}?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
+}
+
 export const envoyerInscription = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({

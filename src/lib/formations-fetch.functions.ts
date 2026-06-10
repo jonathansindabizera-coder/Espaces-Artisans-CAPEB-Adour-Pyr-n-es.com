@@ -42,6 +42,35 @@ function nettoyerTitre(titre: string): string {
   return t.replace(/\s{2,}/g, " ").trim();
 }
 
+// Noms de personnes à ne jamais afficher (issus du contenu scrappé sur capeb.fr)
+const NOMS_A_RETIRER = [/Virginie\s+Borges/gi, /Thierry\s+Jodar/gi];
+
+const LABELS_CONTACT = [
+  "formateur(?:\\(?\\s*\\/?\\s*trice\\)?)?",
+  "formatrice",
+  "intervenant(?:\\(?\\s*\\/?\\s*e\\)?)?",
+  "intervenante",
+  "responsable(?:\\s+de)?(?:\\s+formation)?",
+  "anim[ée]e?\\s+par",
+  "contact",
+  "avec",
+  "par",
+];
+
+function nettoyerNoms(texte: string): string {
+  let t = texte;
+  for (const nomRx of NOMS_A_RETIRER) {
+    // "Label : Nom" ou "Label Nom"
+    t = t.replace(new RegExp(`(?:${LABELS_CONTACT.join("|")})\\s*[:\\-–]?\\s*${nomRx.source}`, "gi"), "");
+    // Le nom seul, avec parenthèses/tirets éventuels autour
+    t = t.replace(new RegExp(`[(\\-–—]?\\s*${nomRx.source}\\s*[)\\-–—]?`, "gi"), "");
+  }
+  return t
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s,;:.\-–—]+|[\s,;:.\-–—]+$/g, "")
+    .trim();
+}
+
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
 }
@@ -141,8 +170,12 @@ function parseFormations(html: string): FormationCapeb[] {
     }
 
     const lieu = detectLieu(titre);
-    const titreNettoye = nettoyerTitre(titre);
+    let titreNettoye = nettoyerNoms(nettoyerTitre(titre));
+    if (!titreNettoye) titreNettoye = external_id;
     const theme = detectTheme(titreNettoye);
+
+    let descriptionNettoyee = description ? nettoyerNoms(description) : null;
+    if (!descriptionNettoyee) descriptionNettoyee = null;
 
     formations.push({
       external_id,
@@ -151,7 +184,7 @@ function parseFormations(html: string): FormationCapeb[] {
       theme,
       date_debut,
       duree_texte,
-      description,
+      description: descriptionNettoyee,
       url_programme_pdf,
       url_ics: icsUrl,
     });
