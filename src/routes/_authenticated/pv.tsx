@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Plus, FileSignature, Hammer, Clock, CheckCircle2, FileText, type LucideIcon } from "lucide-react";
+import { Plus, FileSignature, Hammer, Clock, CheckCircle2, FileText, ArrowRight, type LucideIcon } from "lucide-react";
 import {
   DndContext,
   PointerSensor,
@@ -36,7 +36,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-import { DossierDetailDialog } from "@/components/dossier-detail";
+import { DossierDetailDialog, STATUT_ORDER, STATUT_LABELS } from "@/components/dossier-detail";
 import { PvDocumentDialog } from "@/components/pv-document";
 
 export const Route = createFileRoute("/_authenticated/pv")({
@@ -293,6 +293,9 @@ function DraggableCard({
   const bg    = avatarColor(client.nom);
   const city  = cityFromAdresse(client.adresse);
 
+  const idx = STATUT_ORDER.indexOf(chantier.statut);
+  const nextStatut = idx >= 0 && idx < STATUT_ORDER.length - 1 ? STATUT_ORDER[idx + 1] : null;
+
   return (
     <div
       ref={setNodeRef}
@@ -366,6 +369,22 @@ function DraggableCard({
       >
         <FileSignature className="h-3 w-3" /> Ouvrir le dossier
       </button>
+
+      {/* Passation rapide à l'étape suivante */}
+      {nextStatut && (
+        <button
+          type="button"
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => {
+            e.stopPropagation();
+            updateChantierStatut(chantier.id, nextStatut);
+            notifyUpdate();
+          }}
+          className="mt-1.5 w-full text-[11px] text-[#4A453F] hover:text-[#1A1714] font-medium flex items-center justify-center gap-1 transition-colors py-1 rounded-[7px] hover:bg-[#F1EFED]"
+        >
+          <ArrowRight className="h-3 w-3" /> {STATUT_LABELS[nextStatut]}
+        </button>
+      )}
     </div>
   );
 }

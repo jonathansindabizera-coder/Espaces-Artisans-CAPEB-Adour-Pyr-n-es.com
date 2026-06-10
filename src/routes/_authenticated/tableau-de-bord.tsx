@@ -4,7 +4,7 @@ import { format, addDays, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   AlertTriangle, Calendar, ChevronRight, Users, FileSignature,
-  GraduationCap, Gift, Info, CheckCircle, Clock,
+  GraduationCap, Gift, Info, CheckCircle, Clock, Mail, Phone,
 } from "lucide-react";
 import {
   loadChantiers, loadClients, loadEmployesRH, loadAffectations, loadAbsences,
@@ -44,6 +44,19 @@ function isAbsentOn(salarieId: string, dateStr: string, absences: Absence[]): bo
 function pluriel(n: number, mot: string, motPluriel?: string) {
   return n > 1 ? (motPluriel ?? mot + "s") : mot;
 }
+
+// ── Chargés de développement CAPEB par secteur ──────────────────────────────────
+
+const CHARGES_DEV: {
+  secteur: string;
+  nom: string;
+  email: string;
+  telephone?: string;
+}[] = [
+  { secteur: "Lescar", nom: "Guillaume PIGUÉ", email: "guillaume.pigue@capeb-adour-pyrenees.fr" },
+  { secteur: "Anglet", nom: "Serge CAZEAUX", email: "serge.cazeaux@capeb-adour-pyrenees.fr" },
+  { secteur: "Tarbes", nom: "Frédéric LAPLACE", email: "frederic.laplace@capeb-adour-pyrenees.fr", telephone: "07 77 33 41 88" },
+];
 
 // ── Composants enfants ────────────────────────────────────────────────────────
 
@@ -106,6 +119,62 @@ function ResumCard({
         ))}
       </div>
     </Link>
+  );
+}
+
+function ContactDevCard({
+  secteur, nom, email, telephone,
+}: {
+  secteur: string;
+  nom: string;
+  email: string;
+  telephone?: string;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex", flexDirection: "column", background: "white",
+        borderRadius: 14, padding: "14px 16px", border: "1.5px solid #E5E0DA",
+        gap: 10,
+      }}
+    >
+      <div>
+        <div
+          className="font-display"
+          style={{
+            fontSize: 15, fontWeight: 700, color: "#1A1714",
+            textTransform: "uppercase", letterSpacing: "0.04em",
+          }}
+        >
+          {secteur}
+        </div>
+        <div style={{ fontSize: 13, color: "#4A453F", marginTop: 2 }}>{nom}</div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <a
+          href={`mailto:${email}`}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "8px 12px", borderRadius: 10, background: "#E2001A", color: "white",
+            fontSize: 12, fontWeight: 700, textDecoration: "none",
+          }}
+        >
+          <Mail size={14} /> Envoyer un email
+        </a>
+        {telephone && (
+          <a
+            href={`tel:${telephone.replace(/\s+/g, "")}`}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "8px 12px", borderRadius: 10, background: "white", color: "#4A453F",
+              fontSize: 12, fontWeight: 700, textDecoration: "none", border: "1.5px solid #E5E0DA",
+            }}
+          >
+            <Phone size={14} /> Appeler
+          </a>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -641,6 +710,30 @@ function TableauDeBordPage() {
             }
             vide={false}
           />
+        </div>
+      </section>
+
+      {/* ── 6. Chargés de développement ── */}
+      <section>
+        <div
+          className="font-display"
+          style={{ fontSize: 18, fontWeight: 700, color: "#1A1714", textTransform: "uppercase" }}
+        >
+          Contactez votre chargé de développement
+        </div>
+        <p style={{ fontSize: 12, color: "#8B847D", marginTop: 2, marginBottom: 10 }}>
+          Pour vous accompagner sur toutes vos questions, selon votre secteur
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+            gap: 8,
+          }}
+        >
+          {CHARGES_DEV.map((c) => (
+            <ContactDevCard key={c.secteur} {...c} />
+          ))}
         </div>
       </section>
     </div>
