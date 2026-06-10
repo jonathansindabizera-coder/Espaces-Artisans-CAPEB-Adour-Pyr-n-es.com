@@ -59,6 +59,8 @@ import {
   removeAbsence,
   addAffectation,
   removeAffectation,
+  addChantier,
+  addClient,
   updateChantier,
   updateEmployeRH,
   addEmployeRH,
@@ -227,6 +229,7 @@ function PlanningPage() {
   const [dragActive, setDragActive] = useState<DragData | null>(null);
   const [addEmpModal, setAddEmpModal] = useState(false);
   const [daySelectFor, setDaySelectFor] = useState<EmployeRH | null>(null);
+  const [addChantierModal, setAddChantierModal] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -582,7 +585,21 @@ function PlanningPage() {
             applyAffectation({ kind: "new", chantierId }, assignModal.salarieId, assignModal.date);
             setAssignModal(null);
           }}
+          onAddChantier={() => setAddChantierModal(true)}
           onClose={() => setAssignModal(null)}
+        />
+      )}
+
+      {addChantierModal && assignModal && (
+        <AddChantierModal
+          clients={clients}
+          onClose={() => setAddChantierModal(false)}
+          onCreate={chantierId => {
+            applyAffectation({ kind: "new", chantierId }, assignModal.salarieId, assignModal.date);
+            setAddChantierModal(false);
+            setAssignModal(null);
+            toast.success("Chantier créé et affecté");
+          }}
         />
       )}
 
@@ -1056,12 +1073,13 @@ function AbsenceModal({
 // ── Modal affectation mobile ──────────────────────────────────────────────────
 
 function AssignModal({
-  salarieId, date, employes, chantiers, clients, affectations, absences, onAssign, onClose,
+  salarieId, date, employes, chantiers, clients, affectations, absences, onAssign, onAddChantier, onClose,
 }: {
   salarieId: string; date: string;
   employes: EmployeRH[]; chantiers: Chantier[]; clients: Client[];
   affectations: Affectation[]; absences: Absence[];
   onAssign: (chantierId: string) => void;
+  onAddChantier: () => void;
   onClose: () => void;
 }) {
   const emp = employes.find(e => e.id === salarieId);
@@ -1086,6 +1104,12 @@ function AssignModal({
           </div>
         )}
 
+        {chantiers.length === 0 && (
+          <p style={{ fontSize: 12, color: "#8B847D", textAlign: "center", padding: "8px 0 14px" }}>
+            Aucun chantier actif pour le moment — créez-en un ci-dessous.
+          </p>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {chantiers.map(ch => {
             const nom = clients.find(c => c.id === ch.client_id)?.nom ?? "—";
@@ -1106,6 +1130,102 @@ function AssignModal({
             );
           })}
         </div>
+
+        <button
+          onClick={onAddChantier}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 10, border: "1.5px dashed #D5CFC8", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#E2001A" }}
+        >
+          <Plus size={14} />
+          Nouveau chantier
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal ajout chantier (rapide, depuis la grille) ───────────────────────────
+
+function AddChantierModal({
+  clients, onClose, onCreate,
+}: {
+  clients: Client[];
+  onClose: () => void;
+  onCreate: (chantierId: string) => void;
+}) {
+  const [clientId, setClientId] = useState<string>("__nouveau__");
+  const [nouveauClient, setNouveauClient] = useState("");
+  const [natureTravaux, setNatureTravaux] = useState("");
+  const [metierRequis, setMetierRequis] = useState("");
+  const [nbPersonnes, setNbPersonnes] = useState("");
+
+  const nomClientValide = clientId === "__nouveau__" ? nouveauClient.trim().length > 0 : true;
+  const valid = natureTravaux.trim().length > 0 && nomClientValide;
+
+  function handleCreate() {
+    if (!valid) return;
+    let finalClientId = clientId;
+    if (clientId === "__nouveau__") {
+      const client = addClient({ nom: nouveauClient.trim(), email: null, telephone: null, adresse: null });
+      finalClientId = client.id;
+    }
+    const chantier = addChantier({
+      client_id: finalClientId,
+      nature_travaux: natureTravaux.trim(),
+      montant_estime: null,
+      duree_estimee: null,
+      statut: "travaux_en_cours",
+      metier_requis: metierRequis || null,
+      nb_personnes_requises: nbPersonnes ? Number(nbPersonnes) : null,
+    });
+    notifyUpdate();
+    onCreate(chantier.id);
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 24, width: "100%", maxWidth: 380 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center" }}>
+          <h3 className="font-display" style={{ fontSize: 16, fontWeight: 700 }}>Nouveau chantier</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B847D" }}><X size={18} /></button>
+        </div>
+
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Client</label>
+        <select value={clientId} onChange={e => setClientId(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13, marginBottom: 12 }}>
+          <option value="__nouveau__">+ Nouveau client</option>
+          {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+        </select>
+
+        {clientId === "__nouveau__" && (
+          <>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Nom du client *</label>
+            <input value={nouveauClient} onChange={e => setNouveauClient(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13, marginBottom: 12 }} />
+          </>
+        )}
+
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Nature des travaux *</label>
+        <input value={natureTravaux} onChange={e => setNatureTravaux(e.target.value)} placeholder="Ex : Rénovation toiture" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13, marginBottom: 12 }} />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Métier requis</label>
+            <select value={metierRequis} onChange={e => setMetierRequis(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13 }}>
+              <option value="">— Tous —</option>
+              {METIERS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Personnes requises</label>
+            <input type="number" min={0} value={nbPersonnes} onChange={e => setNbPersonnes(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13 }} />
+          </div>
+        </div>
+
+        <button
+          onClick={handleCreate}
+          disabled={!valid}
+          style={{ width: "100%", padding: "10px 0", borderRadius: 10, background: valid ? "#E2001A" : "#E5E0DA", color: "white", fontWeight: 700, fontSize: 14, border: "none", cursor: valid ? "pointer" : "default" }}
+        >
+          Créer et affecter
+        </button>
       </div>
     </div>
   );
