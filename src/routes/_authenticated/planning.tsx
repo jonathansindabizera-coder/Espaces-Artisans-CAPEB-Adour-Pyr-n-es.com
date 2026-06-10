@@ -41,6 +41,7 @@ import {
   Check,
   Navigation,
   CalendarDays,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -60,6 +61,8 @@ import {
   removeAffectation,
   updateChantier,
   updateEmployeRH,
+  addEmployeRH,
+  notifyUpdate,
   DATA_EVENT,
 } from "@/lib/local-data";
 import { geocodeAdresse, haversineKm, fmtDist } from "@/lib/geo";
@@ -72,6 +75,11 @@ export const Route = createFileRoute("/_authenticated/planning")({
 // ── Constantes ────────────────────────────────────────────────────────────────
 
 const METIERS = ["Maçonnerie", "Charpente", "Couverture", "Plomberie", "Électricité", "Menuiserie", "Carrelage", "Peinture", "Isolation", "Autre"];
+const STATUTS: Record<EmployeRH["statut"], string> = {
+  ouvrier: "Ouvrier",
+  etam: "ETAM",
+  cadre: "Cadre",
+};
 const MOTIFS: Record<Absence["motif"], string> = {
   conges: "Congés",
   maladie: "Maladie",
@@ -190,9 +198,12 @@ function scorerSalaries(
 
 type DragData =
   | { kind: "new"; chantierId: string }
-  | { kind: "move"; affectationId: string; chantierId: string };
+  | { kind: "move"; affectationId: string; chantierId: string }
+  | { kind: "salarie"; salarieId: string };
 
-type DropData = { salarieId: string; date: string };
+type DropData =
+  | { kind: "cell"; salarieId: string; date: string }
+  | { kind: "day"; date: string };
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
@@ -214,6 +225,8 @@ function PlanningPage() {
   const [activeDay, setActiveDay] = useState<string>(() => fmtDate(new Date()));
   const [editEmpId, setEditEmpId] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState<DragData | null>(null);
+  const [addEmpModal, setAddEmpModal] = useState(false);
+  const [daySelectFor, setDaySelectFor] = useState<EmployeRH | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -281,10 +294,18 @@ function PlanningPage() {
     const drop = ev.over?.data.current as DropData | undefined;
     if (!drop) return;
     const drag = ev.active.data.current as DragData;
-    applyAffectation(drag, drop.salarieId, drop.date);
+
+    if (drag.kind === "salarie") {
+      setAssignModal({ salarieId: drag.salarieId, date: drop.date });
+      return;
+    }
+
+    if (drop.kind === "cell") {
+      applyAffectation(drag, drop.salarieId, drop.date);
+    }
   }
 
-  function applyAffectation(drag: DragData, salarieId: string, date: string) {
+  function applyAffectation(drag: Exclude<DragData, { kind: "salarie" }>, salarieId: string, date: string) {
     if (drag.kind === "move") {
       removeAffectation(drag.affectationId);
       addAffectation({ chantier_id: drag.chantierId, salarie_id: salarieId, date });
@@ -438,7 +459,13 @@ function PlanningPage() {
           <CarteView chantiers={chantiersActifs} clients={clients} employes={employes} affectations={affectations} activeDay={activeDay} onDayChange={setActiveDay} days={days} />
         )}
         {tab === "grille" && (
-          <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          <>
+            <ReserveSalaries
+              employes={employes}
+              onAdd={() => setAddEmpModal(true)}
+              onTapSalarie={emp => setDaySelectFor(emp)}
+            />
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
             <PanneauChantiers
               chantiers={chantiersActifs}
               clients={clients}
@@ -458,10 +485,13 @@ function PlanningPage() {
                       const ds = fmtDate(d);
                       const isToday = isSameDay(d, new Date());
                       return (
-                        <th key={ds} style={{ padding: "6px 4px", fontSize: 11, fontWeight: 700, textAlign: "center", color: isToday ? "#E2001A" : "#4A453F", borderBottom: `2px solid ${isToday ? "#E2001A" : "#E5E0DA"}`, minWidth: 80 }}>
-                          <div>{format(d, "EEE", { locale: fr }).toUpperCase()}</div>
-                          <div style={{ fontWeight: 400, fontSize: 11 }}>{format(d, "dd/MM")}</div>
-                        </th>
+                        <DayHeaderCell
+                          key={ds}
+                          date={ds}
+                          label={format(d, "EEE", { locale: fr }).toUpperCase()}
+                          sublabel={format(d, "dd/MM")}
+                          isToday={isToday}
+                        />
                       );
                     })}
                   </tr>
@@ -520,7 +550,8 @@ function PlanningPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -578,6 +609,42 @@ function PlanningPage() {
         />
       )}
 
+      {addEmpModal && (
+        <AddEmployeModal
+          onClose={() => setAddEmpModal(false)}
+          onSave={data => {
+            addEmployeRH({
+              prenom: data.prenom,
+              nom: data.nom,
+              date_naissance: null,
+              num_secu: null,
+              qualification: null,
+              salarie_adresse: null,
+              statut: data.statut,
+              actif: true,
+              metier: data.metier || null,
+              couleur: data.couleur,
+            });
+            notifyUpdate();
+            reload();
+            setAddEmpModal(false);
+            toast.success("Salarié ajouté");
+          }}
+        />
+      )}
+
+      {daySelectFor && (
+        <DaySelectModal
+          employe={daySelectFor}
+          days={days}
+          onSelect={ds => {
+            setAssignModal({ salarieId: daySelectFor.id, date: ds });
+            setDaySelectFor(null);
+          }}
+          onClose={() => setDaySelectFor(null)}
+        />
+      )}
+
       <AbsenceFloatingList
         absences={absences}
         employes={employes}
@@ -590,6 +657,15 @@ function PlanningPage() {
             {chantiers.find(c => c.id === dragActive.chantierId)?.nature_travaux ?? "Chantier"}
           </div>
         )}
+        {dragActive && dragActive.kind === "salarie" && (() => {
+          const emp = employes.find(e => e.id === dragActive.salarieId);
+          if (!emp) return null;
+          return (
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: couleurEmp(emp.id, emp.couleur), display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 12, fontWeight: 700, boxShadow: "0 4px 12px rgba(0,0,0,.25)", border: "2px solid white" }}>
+              {initiales(emp.nom, emp.prenom)}
+            </div>
+          );
+        })()}
       </DragOverlay>
     </DndContext>
   );
@@ -613,6 +689,89 @@ function ActionBtn({ onClick, icon, label }: { onClick: () => void; icon: React.
   );
 }
 
+// ── Réserve de salariés ───────────────────────────────────────────────────────
+
+function ReserveSalaries({
+  employes, onAdd, onTapSalarie,
+}: {
+  employes: EmployeRH[];
+  onAdd: () => void;
+  onTapSalarie: (emp: EmployeRH) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, padding: "10px 12px", background: "white", borderRadius: 14, border: "1px solid #ECE7E1", boxShadow: "0 1px 3px rgba(26,23,20,.06), 0 6px 16px rgba(26,23,20,.05)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#8B847D", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+        <Users size={13} />
+        Réserve
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, flex: 1 }}>
+        {employes.map(emp => (
+          <ReserveAvatar key={emp.id} employe={emp} onTap={() => onTapSalarie(emp)} />
+        ))}
+      </div>
+      <button
+        onClick={onAdd}
+        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 10, background: "rgba(226,0,26,.07)", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#E2001A" }}
+      >
+        <Plus size={13} />
+        Ajouter un salarié
+      </button>
+    </div>
+  );
+}
+
+function ReserveAvatar({ employe, onTap }: { employe: EmployeRH; onTap: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `salarie-${employe.id}`,
+    data: { kind: "salarie", salarieId: employe.id } satisfies DragData,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={onTap}
+      title={`${employe.prenom} ${employe.nom} — glisser sur un jour ou cliquer pour affecter`}
+      style={{
+        width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+        background: couleurEmp(employe.id, employe.couleur),
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "white", fontSize: 12, fontWeight: 700,
+        cursor: "grab", opacity: isDragging ? 0.4 : 1,
+        transform: CSS.Translate.toString(transform), userSelect: "none",
+        border: "2px solid white", boxShadow: "0 1px 3px rgba(26,23,20,.15)",
+        touchAction: "none",
+      }}
+    >
+      {initiales(employe.nom, employe.prenom)}
+    </div>
+  );
+}
+
+// ── En-tête de jour (drop "salarié → jour") ───────────────────────────────────
+
+function DayHeaderCell({
+  date, label, sublabel, isToday,
+}: {
+  date: string; label: string; sublabel: string; isToday: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `day-${date}`,
+    data: { kind: "day", date } satisfies DropData,
+  });
+
+  return (
+    <th
+      ref={setNodeRef}
+      style={{ padding: "6px 4px", fontSize: 11, fontWeight: 700, textAlign: "center", color: isToday ? "#E2001A" : "#4A453F", borderBottom: `2px solid ${isToday ? "#E2001A" : "#E5E0DA"}`, minWidth: 80, background: isOver ? "rgba(226,0,26,.08)" : "transparent", borderRadius: isOver ? "6px 6px 0 0" : 0, transition: "background .15s" }}
+    >
+      <div>{label}</div>
+      <div style={{ fontWeight: 400, fontSize: 11 }}>{sublabel}</div>
+    </th>
+  );
+}
+
 // ── Cellule grille ────────────────────────────────────────────────────────────
 
 function GridCell({
@@ -628,7 +787,7 @@ function GridCell({
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `cell-${salarieId}-${date}`,
-    data: { salarieId, date } satisfies DropData,
+    data: { kind: "cell", salarieId, date } satisfies DropData,
   });
 
   const hasConflict = affectations.length > 1;
@@ -985,6 +1144,109 @@ function EditEmployeModal({
         <button onClick={() => onSave({ metier: metier || null, couleur })} style={{ width: "100%", padding: "10px 0", borderRadius: 10, background: "#E2001A", color: "white", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>
           Enregistrer
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal ajout salarié ───────────────────────────────────────────────────────
+
+function AddEmployeModal({
+  onClose, onSave,
+}: {
+  onClose: () => void;
+  onSave: (data: { prenom: string; nom: string; metier: string; statut: EmployeRH["statut"]; couleur: string }) => void;
+}) {
+  const [prenom, setPrenom] = useState("");
+  const [nom, setNom] = useState("");
+  const [metier, setMetier] = useState("");
+  const [statut, setStatut] = useState<EmployeRH["statut"]>("ouvrier");
+  const [couleur, setCouleur] = useState(PALETTE[0]);
+
+  const valid = prenom.trim().length > 0 && nom.trim().length > 0;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 24, width: "100%", maxWidth: 380 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center" }}>
+          <h3 className="font-display" style={{ fontSize: 16, fontWeight: 700 }}>Ajouter un salarié</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B847D" }}><X size={18} /></button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Prénom *</label>
+            <input value={prenom} onChange={e => setPrenom(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13 }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Nom *</label>
+            <input value={nom} onChange={e => setNom(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13 }} />
+          </div>
+        </div>
+
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Métier / spécialité</label>
+        <select value={metier} onChange={e => setMetier(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13, marginBottom: 12 }}>
+          <option value="">— Non renseigné —</option>
+          {METIERS.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Statut</label>
+        <select value={statut} onChange={e => setStatut(e.target.value as EmployeRH["statut"])} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E0DA", fontSize: 13, marginBottom: 12 }}>
+          {Object.entries(STATUTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#4A453F", display: "block", marginBottom: 4 }}>Couleur planning</label>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          {PALETTE.map(c => (
+            <button key={c} onClick={() => setCouleur(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: "none", cursor: "pointer", outline: couleur === c ? `3px solid ${c}` : "none", outlineOffset: 2 }} />
+          ))}
+        </div>
+
+        <button
+          onClick={() => valid && onSave({ prenom: prenom.trim(), nom: nom.trim(), metier, statut, couleur })}
+          disabled={!valid}
+          style={{ width: "100%", padding: "10px 0", borderRadius: 10, background: valid ? "#E2001A" : "#E5E0DA", color: "white", fontWeight: 700, fontSize: 14, border: "none", cursor: valid ? "pointer" : "default" }}
+        >
+          Ajouter
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal sélection de jour (réserve, mobile) ─────────────────────────────────
+
+function DaySelectModal({
+  employe, days, onSelect, onClose,
+}: {
+  employe: EmployeRH;
+  days: Date[];
+  onSelect: (date: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 24, width: "100%", maxWidth: 360 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
+          <h3 className="font-display" style={{ fontSize: 16, fontWeight: 700 }}>Affecter {employe.prenom} {employe.nom}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B847D" }}><X size={18} /></button>
+        </div>
+        <p style={{ fontSize: 12, color: "#8B847D", marginBottom: 14 }}>Choisissez un jour</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+          {days.map(d => {
+            const ds = fmtDate(d);
+            return (
+              <button
+                key={ds}
+                onClick={() => onSelect(ds)}
+                style={{ padding: "10px 0", borderRadius: 10, border: "1.5px solid #E5E0DA", background: "white", cursor: "pointer", textAlign: "center" }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "#8B847D" }}>{format(d, "EEE", { locale: fr })}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1714" }}>{format(d, "dd/MM")}</div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
