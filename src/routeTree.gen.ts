@@ -17,6 +17,7 @@ import { Route as AuthenticatedServicesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedPvRouteImport } from './routes/_authenticated/pv'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
+import { Route as AuthenticatedMarchesPorteursRouteImport } from './routes/_authenticated/marches-porteurs'
 import { Route as AuthenticatedFormationsRouteImport } from './routes/_authenticated/formations'
 import { Route as AuthenticatedBienvenueRouteImport } from './routes/_authenticated/bienvenue'
 import { Route as AuthenticatedAvantagesRouteImport } from './routes/_authenticated/avantages'
@@ -61,6 +62,12 @@ const AuthenticatedPlanningRoute = AuthenticatedPlanningRouteImport.update({
   path: '/planning',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMarchesPorteursRoute =
+  AuthenticatedMarchesPorteursRouteImport.update({
+    id: '/marches-porteurs',
+    path: '/marches-porteurs',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFormationsRoute = AuthenticatedFormationsRouteImport.update({
   id: '/formations',
   path: '/formations',
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/avantages': typeof AuthenticatedAvantagesRoute
   '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/formations': typeof AuthenticatedFormationsRoute
+  '/marches-porteurs': typeof AuthenticatedMarchesPorteursRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
   '/rh': typeof AuthenticatedRhRoute
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
   '/avantages': typeof AuthenticatedAvantagesRoute
   '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/formations': typeof AuthenticatedFormationsRoute
+  '/marches-porteurs': typeof AuthenticatedMarchesPorteursRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/pv': typeof AuthenticatedPvRoute
   '/rh': typeof AuthenticatedRhRoute
@@ -109,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated/avantages': typeof AuthenticatedAvantagesRoute
   '/_authenticated/bienvenue': typeof AuthenticatedBienvenueRoute
   '/_authenticated/formations': typeof AuthenticatedFormationsRoute
+  '/_authenticated/marches-porteurs': typeof AuthenticatedMarchesPorteursRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
   '/_authenticated/pv': typeof AuthenticatedPvRoute
   '/_authenticated/rh': typeof AuthenticatedRhRoute
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/avantages'
     | '/bienvenue'
     | '/formations'
+    | '/marches-porteurs'
     | '/planning'
     | '/pv'
     | '/rh'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/avantages'
     | '/bienvenue'
     | '/formations'
+    | '/marches-porteurs'
     | '/planning'
     | '/pv'
     | '/rh'
@@ -148,6 +160,7 @@ export interface FileRouteTypes {
     | '/_authenticated/avantages'
     | '/_authenticated/bienvenue'
     | '/_authenticated/formations'
+    | '/_authenticated/marches-porteurs'
     | '/_authenticated/planning'
     | '/_authenticated/pv'
     | '/_authenticated/rh'
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlanningRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/marches-porteurs': {
+      id: '/_authenticated/marches-porteurs'
+      path: '/marches-porteurs'
+      fullPath: '/marches-porteurs'
+      preLoaderRoute: typeof AuthenticatedMarchesPorteursRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/formations': {
       id: '/_authenticated/formations'
       path: '/formations'
@@ -247,6 +267,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAvantagesRoute: typeof AuthenticatedAvantagesRoute
   AuthenticatedBienvenueRoute: typeof AuthenticatedBienvenueRoute
   AuthenticatedFormationsRoute: typeof AuthenticatedFormationsRoute
+  AuthenticatedMarchesPorteursRoute: typeof AuthenticatedMarchesPorteursRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
   AuthenticatedPvRoute: typeof AuthenticatedPvRoute
   AuthenticatedRhRoute: typeof AuthenticatedRhRoute
@@ -258,6 +279,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAvantagesRoute: AuthenticatedAvantagesRoute,
   AuthenticatedBienvenueRoute: AuthenticatedBienvenueRoute,
   AuthenticatedFormationsRoute: AuthenticatedFormationsRoute,
+  AuthenticatedMarchesPorteursRoute: AuthenticatedMarchesPorteursRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
   AuthenticatedPvRoute: AuthenticatedPvRoute,
   AuthenticatedRhRoute: AuthenticatedRhRoute,

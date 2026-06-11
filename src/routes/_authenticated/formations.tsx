@@ -4,6 +4,7 @@ import {
   Calendar,
   FileText,
   Mail,
+  Search,
 } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -15,6 +16,9 @@ import {
 import { buildInscriptionMailto } from "@/lib/inscription-email.functions";
 
 export const Route = createFileRoute("/_authenticated/formations")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : "",
+  }),
   head: () => ({ meta: [{ title: "Formations – CAPEB" }] }),
   component: FormationsPage,
 });
@@ -25,16 +29,19 @@ function capitalizeFirst(s: string): string {
 
 // ── FormationsPage ────────────────────────────────────────────────────────────
 function FormationsPage() {
+  const { q } = Route.useSearch();
   const [filtreAVenir, setFiltreAVenir] = useState(true);
+  const [recherche, setRecherche] = useState(q);
 
   const formations = FORMATIONS_CATALOGUE;
 
   const formationsFiltrees = useMemo(() => {
     return formations.filter(f => {
       if (filtreAVenir && f.date_debut && isPast(parseISO(f.date_debut))) return false;
+      if (recherche.trim() && !f.titre.toLowerCase().includes(recherche.trim().toLowerCase())) return false;
       return true;
     });
-  }, [formations, filtreAVenir]);
+  }, [formations, filtreAVenir, recherche]);
 
   return (
     <div className="space-y-5">
@@ -73,6 +80,19 @@ function FormationsPage() {
 
       {/* Filtres en pastilles */}
       <div className="flex flex-wrap gap-[9px] items-center">
+        <div
+          className="flex items-center gap-2 rounded-[10px] px-3 flex-1 min-w-[200px] max-w-[340px]"
+          style={{ height: 38, background: "white", border: "1px solid #ECE7E1" }}
+        >
+          <Search className="h-3.5 w-3.5 shrink-0 text-[#8B847D]" />
+          <input
+            type="text"
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            placeholder="Rechercher une formation…"
+            className="flex-1 bg-transparent text-[13px] text-[#1A1714] placeholder:text-[#8B847D] outline-none min-w-0"
+          />
+        </div>
         <FilterChip
           label={filtreAVenir ? "✓ À venir" : "Toutes les dates"}
           active={filtreAVenir}

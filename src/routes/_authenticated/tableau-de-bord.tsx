@@ -4,7 +4,7 @@ import { format, addDays, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   AlertTriangle, Calendar, ChevronRight, Users, FileSignature,
-  GraduationCap, Gift, Info, CheckCircle, Clock, Mail, Phone, HeartHandshake,
+  GraduationCap, Gift, Info, CheckCircle, Clock, Mail, Phone, HeartHandshake, TrendingUp,
 } from "lucide-react";
 import {
   loadChantiers, loadClients, loadEmployesRH, loadAffectations, loadAbsences,
@@ -715,6 +715,13 @@ function TableauDeBordPage() {
             title="Nos services CAPEB"
             lien="/services"
             lignes={["Découvrez les 7 pôles d'accompagnement CAPEB"]}
+            vide={false}
+          />
+          <ResumCard
+            icon={<TrendingUp size={18} />}
+            title="Marchés porteurs"
+            lien="/marches-porteurs"
+            lignes={["Où vous positionner, et comment être accompagné par la CAPEB"]}
             vide={false}
           />
         </div>
