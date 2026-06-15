@@ -7,10 +7,10 @@ const NAV_ITEMS = [
   { title: "Tableau de bord",     url: "/tableau-de-bord", icon: LayoutDashboard },
   { title: "PV & Suivi devis",    url: "/pv",              icon: FileSignature },
   { title: "Planning chantiers",  url: "/planning",        icon: Calendar },
-  { title: "Formations",          url: "/formations",      icon: GraduationCap },
+  { title: "RH & Juridique",      url: "/rh",              icon: Users },
   { title: "Marchés porteurs",    url: "/marches-porteurs", icon: TrendingUp },
   { title: "Marchés publics",     url: "/marches-publics",  icon: Landmark },
-  { title: "RH & Juridique",      url: "/rh",              icon: Users },
+  { title: "Formations",          url: "/formations",      icon: GraduationCap },
   { title: "Nos services CAPEB",  url: "/services",        icon: HeartHandshake },
   { title: "Avantages CAPEB",     url: "/avantages",       icon: Gift },
 ];
