@@ -21,6 +21,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/planning":   "Planning chantiers",
   "/formations": "Formations",
   "/marches-porteurs": "Marchés porteurs",
+  "/marches-publics": "Marchés publics",
   "/rh":         "RH & Juridique",
   "/services":   "Nos services CAPEB",
   "/avantages":  "Avantages CAPEB",

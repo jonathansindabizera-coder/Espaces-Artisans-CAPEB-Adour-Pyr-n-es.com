@@ -13,6 +13,7 @@ import {
   type Chantier, type Client, type EmployeRH, type Affectation, type Absence,
   type Ressource, type AffectationRessource,
 } from "@/lib/local-data";
+import { CHARGES_DEV } from "@/lib/contacts-capeb";
 
 export const Route = createFileRoute("/_authenticated/tableau-de-bord")({
   head: () => ({ meta: [{ title: "Tableau de bord – CAPEB" }] }),
@@ -44,19 +45,6 @@ function isAbsentOn(salarieId: string, dateStr: string, absences: Absence[]): bo
 function pluriel(n: number, mot: string, motPluriel?: string) {
   return n > 1 ? (motPluriel ?? mot + "s") : mot;
 }
-
-// ── Chargés de développement CAPEB par secteur ──────────────────────────────────
-
-const CHARGES_DEV: {
-  secteur: string;
-  nom: string;
-  email: string;
-  telephone?: string;
-}[] = [
-  { secteur: "Lescar", nom: "Guillaume PIGUÉ", email: "guillaume.pigue@capeb-adour-pyrenees.fr" },
-  { secteur: "Anglet", nom: "Serge CAZEAUX", email: "serge.cazeaux@capeb-adour-pyrenees.fr" },
-  { secteur: "Tarbes", nom: "Frédéric LAPLACE", email: "frederic.laplace@capeb-adour-pyrenees.fr", telephone: "07 77 33 41 88" },
-];
 
 // ── Composants enfants ────────────────────────────────────────────────────────
 
