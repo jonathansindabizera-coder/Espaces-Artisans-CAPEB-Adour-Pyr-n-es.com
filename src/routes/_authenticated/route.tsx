@@ -117,7 +117,7 @@ function AuthenticatedLayout() {
 
   useEffect(() => {
     if (!loadProfilEntreprise().nom && path !== "/bienvenue") {
-      navigate({ to: "/bienvenue" });
+      navigate({ to: "/bienvenue", search: { redirect: path } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

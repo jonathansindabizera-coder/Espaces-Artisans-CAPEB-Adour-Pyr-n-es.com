@@ -14,6 +14,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/bienvenue")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    // Chemin vers lequel revenir une fois l'onboarding terminé (lien profond intercepté par le guard de _authenticated).
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   head: () => ({ meta: [{ title: "Bienvenue – Espace Artisan CAPEB" }] }),
   component: BienvenuePage,
 });
@@ -42,6 +46,7 @@ function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLT
 
 function BienvenuePage() {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const [step, setStep] = useState<1 | 2>(1);
   const [profil, setProfil] = useState<ProfilEntreprise>(() => loadProfilEntreprise());
   const [equipe, setEquipe] = useState<EmployeRH[]>(() => loadEmployesRH());
@@ -68,7 +73,9 @@ function BienvenuePage() {
   };
 
   const handleFinish = () => {
-    navigate({ to: "/tableau-de-bord" });
+    // Sécurité : on ne suit que les chemins internes (évite tout open-redirect via le lien email).
+    const destination = redirect && redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/tableau-de-bord";
+    navigate({ to: destination });
   };
 
   return (
