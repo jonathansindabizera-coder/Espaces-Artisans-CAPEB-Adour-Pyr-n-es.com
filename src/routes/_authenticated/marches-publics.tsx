@@ -28,10 +28,19 @@ function capitalizeFirst(s: string): string {
 }
 
 // ── MarchesPublicsPage ───────────────────────────────────────────────────────────
+const FILTRES_DEPARTEMENT = [
+  { value: "tous", label: "Tous" },
+  { value: "64", label: "64 — Pyrénées-Atlantiques" },
+  { value: "65", label: "65 — Hautes-Pyrénées" },
+] as const;
+
+type FiltreDepartement = (typeof FILTRES_DEPARTEMENT)[number]["value"];
+
 function MarchesPublicsPage() {
   const [cache, setCache] = useState<MarchesPublicsCache | null>(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [filtreDept, setFiltreDept] = useState<FiltreDepartement>("tous");
 
   const rafraichir = useCallback(async () => {
     setChargement(true);
@@ -59,7 +68,9 @@ function MarchesPublicsPage() {
   }, [rafraichir]);
 
   // On ignore les marchés dont la date limite est dépassée depuis la mise en cache
-  const marches = (cache?.marches ?? []).filter(m => joursRestants(m.dateLimiteReponse) >= 0);
+  const marches = (cache?.marches ?? [])
+    .filter(m => joursRestants(m.dateLimiteReponse) >= 0)
+    .filter(m => filtreDept === "tous" || m.departements.includes(filtreDept));
 
   return (
     <div className="space-y-5">
@@ -72,6 +83,27 @@ function MarchesPublicsPage() {
         <p className="text-[#8B847D] text-sm mt-[7px]">
           Appels d'offres bâtiment ouverts dans les Pyrénées-Atlantiques (64) et les Hautes-Pyrénées (65)
         </p>
+      </div>
+
+      {/* Filtre département */}
+      <div className="flex flex-wrap items-center gap-[8px]">
+        {FILTRES_DEPARTEMENT.map(opt => {
+          const actif = filtreDept === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setFiltreDept(opt.value)}
+              className="text-[12.5px] font-semibold rounded-[9px] px-[13px] py-[8px] border transition-colors"
+              style={
+                actif
+                  ? { background: "linear-gradient(180deg,#EA1227,#D2001A)", color: "white", borderColor: "transparent", boxShadow: "0 3px 10px rgba(226,0,26,.3)" }
+                  : { background: "#FAF8F5", color: "#4A453F", borderColor: "#ECE7E1" }
+              }
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Bandeau source + actualisation */}
