@@ -11,6 +11,13 @@ functions, but **most feature data lives in the browser `localStorage`**
 (see `src/lib/local-data.ts`), so the core app is fully usable without any
 backend secrets.
 
+### Dependency install
+Dependencies are installed automatically on VM startup via the Cursor Cloud
+update script `npm ci` (clean, lockfile-exact install; respects the
+`.npmrc` `legacy-peer-deps=true`). You normally don't need to install anything
+manually. Run `npm ci` yourself only after changing `package.json` /
+`package-lock.json`.
+
 ### Running (commands live in `package.json`)
 - Dev server: `npm run dev` → http://localhost:8080 (port/host are fixed by the
   Lovable config; not 5173).
@@ -23,8 +30,13 @@ backend secrets.
   **npm** here (bun is not installed). `.npmrc` sets `legacy-peer-deps=true`, so
   plain `npm install` is required (peer-dep conflicts otherwise).
 - `npm run lint` currently reports a large number of pre-existing
-  `prettier/prettier` formatting errors on committed source. This is the repo's
-  existing state — ESLint itself works; don't mass-reformat files unless asked.
+  `prettier/prettier` formatting errors on committed source (exits non-zero).
+  This is the repo's existing state — ESLint itself works; don't mass-reformat
+  files unless asked.
+- Run `npm run lint` **before** `npm run build`, or clean build output first
+  (`rm -rf .vercel .output .nitro .tanstack`). The ESLint ignore list covers
+  `dist`/`.output`/`.vinxi` but not `.vercel`, so after a build ESLint crawls the
+  generated `.vercel/output` tree and takes minutes instead of ~7s.
 - No Supabase env vars are needed to run/browse the app. Without
   `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` the client logs a warning
   and runs in "offline mode"; the `_authenticated` routes do **not** gate on
