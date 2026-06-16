@@ -112,6 +112,10 @@ function departementAffaire(affaire: AffaireCAPEB) {
   return "autre";
 }
 
+function typeLienSource(affaire: AffaireCAPEB): NonNullable<AffaireCAPEB["sourceUrlType"]> {
+  return affaire.sourceUrlType ?? (affaire.sourceUrl ? "annonce_exacte" : "page_recherche");
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 
 function AffairesCAPEBPage() {
@@ -432,6 +436,10 @@ function StatCard({
 
 function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger: () => void }) {
   const [ouverte, setOuverte] = useState(false);
+  const [lienSource, setLienSource] = useState(affaire.sourceUrl ?? "");
+  const [typeLien, setTypeLien] = useState<NonNullable<AffaireCAPEB["sourceUrlType"]>>(
+    typeLienSource(affaire),
+  );
   const Icon = iconPourType(affaire.typesTravaux);
 
   const dateFormatee = (() => {
@@ -448,6 +456,8 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
   const mailtoContacter = `mailto:frederic.laplace@capeb-adour-pyrenees.fr?subject=${sujet}`;
   const source = sourceAffaire(affaire);
   const validation = affaire.validation ?? "validee";
+  const lienExactDisponible =
+    Boolean(affaire.sourceUrl) && typeLienSource(affaire) === "annonce_exacte";
 
   function handleOuvrir() {
     if (!ouverte && affaire.statut === "nouveau") {
@@ -464,6 +474,28 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
     notifyUpdate();
     recharger();
     toast.success("Demande supprimée");
+  }
+
+  function handleEnregistrerLien(e: React.FormEvent) {
+    e.preventDefault();
+    const url = lienSource.trim();
+    if (!url) {
+      saveAffaireCAPEB({ ...affaire, sourceUrl: undefined, sourceUrlType: undefined });
+      notifyUpdate();
+      recharger();
+      toast.success("Lien source retiré");
+      return;
+    }
+    if (!sourceUrlValide(url)) {
+      toast.error("Le lien doit commencer par http:// ou https://");
+      return;
+    }
+    saveAffaireCAPEB({ ...affaire, sourceUrl: url, sourceUrlType: typeLien });
+    notifyUpdate();
+    recharger();
+    toast.success(
+      typeLien === "annonce_exacte" ? "Lien exact enregistré" : "Page de recherche enregistrée",
+    );
   }
 
   const estNouveau = affaire.statut === "nouveau";
@@ -545,10 +577,56 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
             <Globe2 className="h-3.5 w-3.5 text-[#4A453F]" />
             <span className="text-[12.5px] font-semibold text-[#1A1714]">{source}</span>
           </div>
+          <div className="mt-[7px] flex flex-wrap items-center gap-2">
+            <span
+              className="rounded-full px-[8px] py-[2px] text-[10.5px] font-semibold uppercase tracking-wide"
+              style={
+                lienExactDisponible
+                  ? { background: "#E7F4EC", color: "#1E8E55" }
+                  : { background: "#FBF1DE", color: "#D98A00" }
+              }
+            >
+              {lienExactDisponible ? "Lien annonce exact" : "Lien exact à compléter"}
+            </span>
+            {!lienExactDisponible && affaire.sourceUrl && (
+              <span className="text-[11.5px] text-[#8B847D]">Page de recherche disponible</span>
+            )}
+          </div>
           {ouverte && affaire.contactConsigne && (
             <p className="mt-[6px] text-[12px] leading-relaxed text-[#4A453F]">
               {affaire.contactConsigne}
             </p>
+          )}
+          {ouverte && (
+            <form onSubmit={handleEnregistrerLien} className="mt-[10px] space-y-[8px]">
+              <label className={LABEL_CLS}>URL de l'annonce</label>
+              <input
+                type="url"
+                value={lienSource}
+                onChange={(e) => setLienSource(e.target.value)}
+                placeholder="Collez ici l'URL exacte de l'annonce"
+                className={INPUT_CLS}
+              />
+              <div className="grid grid-cols-[1fr_auto] gap-[8px]">
+                <select
+                  value={typeLien}
+                  onChange={(e) =>
+                    setTypeLien(e.target.value as NonNullable<AffaireCAPEB["sourceUrlType"]>)
+                  }
+                  className={INPUT_CLS}
+                >
+                  <option value="annonce_exacte">URL exacte de l'annonce</option>
+                  <option value="page_recherche">Page de recherche / catégorie</option>
+                </select>
+                <button
+                  type="submit"
+                  className="rounded-[10px] px-[12px] py-[10px] text-[12.5px] font-semibold text-white"
+                  style={{ background: "linear-gradient(180deg,#EA1227,#D2001A)" }}
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </form>
           )}
         </div>
 
@@ -580,10 +658,10 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-[5px] text-[12px] font-medium text-[#4A453F] rounded-[9px] px-[10px] py-[9px] border border-[#ECE7E1] hover:border-[#E2DCD4] transition-colors"
               style={{ background: "#FAF8F5" }}
-              title="Voir l'annonce source"
+              title={lienExactDisponible ? "Voir l'annonce source" : "Ouvrir la page de recherche"}
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              Voir annonce
+              {lienExactDisponible ? "Voir annonce" : "Recherche"}
             </a>
           )}
           <button
@@ -622,6 +700,7 @@ type FormAjout = {
   origine: NonNullable<AffaireCAPEB["origine"]>;
   sourceNom: string;
   sourceUrl: string;
+  sourceUrlType: NonNullable<AffaireCAPEB["sourceUrlType"]>;
   validation: NonNullable<AffaireCAPEB["validation"]>;
   contactConsigne: string;
 };
@@ -635,6 +714,7 @@ const FORM_DEFAUT: FormAjout = {
   origine: "depot_direct",
   sourceNom: "",
   sourceUrl: "",
+  sourceUrlType: "annonce_exacte",
   validation: "validee",
   contactConsigne: "Contact à transmettre après qualification par la CAPEB.",
 };
@@ -665,6 +745,7 @@ function VueAjouter({ onSuccess }: { onSuccess: () => void }) {
       origine: form.origine,
       sourceNom: form.sourceNom.trim() || labelOrigine(form.origine),
       sourceUrl: form.sourceUrl.trim() || undefined,
+      sourceUrlType: form.sourceUrl.trim() ? form.sourceUrlType : undefined,
       validation: form.validation,
       contactConsigne: form.contactConsigne.trim() || undefined,
     };
@@ -808,6 +889,21 @@ function VueAjouter({ onSuccess }: { onSuccess: () => void }) {
             />
             <p className="text-[11.5px] text-[#8B847D] mt-[6px]">
               Conservez un lien plutôt que de recopier des coordonnées personnelles.
+            </p>
+          </div>
+
+          <div>
+            <label className={LABEL_CLS}>Type de lien</label>
+            <select
+              value={form.sourceUrlType}
+              onChange={(e) => set("sourceUrlType", e.target.value)}
+              className={INPUT_CLS}
+            >
+              <option value="annonce_exacte">URL exacte de l'annonce</option>
+              <option value="page_recherche">Page de recherche / catégorie</option>
+            </select>
+            <p className="text-[11.5px] text-[#8B847D] mt-[6px]">
+              Pour les artisans, privilégiez toujours l'URL exacte de l'annonce.
             </p>
           </div>
 

@@ -541,13 +541,14 @@ export type AffaireCAPEB = {
   origine?: "depot_direct" | "capeb" | "veille_publique" | "partenaire" | "import_manuel";
   sourceNom?: string;
   sourceUrl?: string;
+  sourceUrlType?: "annonce_exacte" | "page_recherche";
   validation?: "a_valider" | "validee";
   contactConsigne?: string;
 };
 
 const K_AFFAIRES_CAPEB = "ea_affaires_capeb";
 const K_AFFAIRES_CAPEB_SEED_VERSION = "ea_affaires_capeb_seed_version";
-const AFFAIRES_CAPEB_SEED_VERSION = "2026-06-16-veille-allovoisins-dept-links";
+const AFFAIRES_CAPEB_SEED_VERSION = "2026-06-16-veille-allovoisins-exact-url-workflow";
 const AFFAIRES_CAPEB_SEED_REMOVED_IDS = new Set([
   "veille-allovoisins-mazeres-lezons-macon-demi-journees-20260616",
 ]);
@@ -584,6 +585,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "Annonce publique locale",
     sourceUrl: "https://www.leboncoin.fr/",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne:
       "Vérifier que l'annonce est toujours publique et contacter le particulier uniquement via la plateforme source.",
@@ -601,6 +603,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "import_manuel",
     sourceNom: "Groupe local public",
     sourceUrl: "https://www.facebook.com/",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne:
       "Demande importée manuellement depuis une publication visible publiquement. Ne pas republier de données personnelles.",
@@ -618,6 +621,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Rénovation Pau",
     sourceUrl: "https://www.allovoisins.com/v/artisan-tout-corps-d-etat-renovation/pau",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -634,6 +638,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Maçonnerie Pau",
     sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -649,6 +654,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Crépi de mur Pau/Lons",
     sourceUrl: "https://www.allovoisins.com/v/si/crepi-de-mur/pau",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -665,6 +671,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Dalle béton",
     sourceUrl: "https://www.allovoisins.com/v/si/realisation-de-dalle-en-beton",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -681,6 +688,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Terrassement Gelos",
     sourceUrl: "https://www.allovoisins.com/v/terrassement-assainissement/gelos",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -697,6 +705,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Bricolage Tarbes",
     sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -713,6 +722,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Brise-vue Juillan",
     sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/azereix",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -729,6 +739,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Tringles et luminaire Bazet",
     sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/salles-adour",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -745,6 +756,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Maçonnerie Bordères-sur-l'Échez",
     sourceUrl: "https://www.allovoisins.com/v/maconnerie/borderes-sur-lechez",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -761,6 +773,7 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Maçonnerie Barbazan-Debat",
     sourceUrl: "https://www.allovoisins.com/r/0/133/34931/0/Barbazan-debat/service/Maconnerie",
+    sourceUrlType: "page_recherche",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -781,6 +794,12 @@ function synchroniserAffairesCAPEBSeed(
 
       return {
         ...seed,
+        sourceUrl:
+          affaire.sourceUrlType === "annonce_exacte" && affaire.sourceUrl
+            ? affaire.sourceUrl
+            : seed.sourceUrl,
+        sourceUrlType:
+          affaire.sourceUrlType === "annonce_exacte" ? "annonce_exacte" : seed.sourceUrlType,
         statut: affaire.statut,
         validation: affaire.validation ?? seed.validation,
       };
