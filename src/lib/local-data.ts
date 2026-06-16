@@ -452,3 +452,84 @@ export function updatePointage(id: string, data: Partial<Omit<Pointage, "id">>):
 export function removePointage(id: string): void {
   localStorage.setItem(K_POINTAGES, JSON.stringify(loadPointages().filter(p => p.id !== id)));
 }
+
+// ── Affaires CAPEB ────────────────────────────────────────────────────────────
+
+export type AffaireCAPEB = {
+  id: string;
+  dateAjout: string;
+  typesTravaux: string;
+  commune: string;
+  codePostal: string;
+  description: string;
+  statut: "nouveau" | "vu";
+  corpsMetierCible: string;
+};
+
+const K_AFFAIRES_CAPEB = "ea_affaires_capeb";
+
+const AFFAIRES_DEMO: AffaireCAPEB[] = [
+  {
+    id: "demo-affaire-1",
+    dateAjout: "2026-06-10T09:00:00.000Z",
+    typesTravaux: "Plomberie",
+    commune: "Pau",
+    codePostal: "64000",
+    description: "Remplacement de la chaudière fioul par une pompe à chaleur. Maison individuelle de 120 m², construction 1975. Devis souhaité avant fin juin.",
+    statut: "nouveau",
+    corpsMetierCible: "Plomberie",
+  },
+  {
+    id: "demo-affaire-2",
+    dateAjout: "2026-06-12T14:30:00.000Z",
+    typesTravaux: "Électricité",
+    commune: "Tarbes",
+    codePostal: "65000",
+    description: "Mise aux normes du tableau électrique et ajout de prises dans une maison de 1968. Travaux à réaliser cet été si possible.",
+    statut: "nouveau",
+    corpsMetierCible: "Électricité",
+  },
+  {
+    id: "demo-affaire-3",
+    dateAjout: "2026-06-14T11:00:00.000Z",
+    typesTravaux: "Peinture",
+    commune: "Bayonne",
+    codePostal: "64100",
+    description: "Rénovation peinture d'un appartement T3 de 75 m² : murs et plafonds de toutes les pièces. Couleurs à définir ensemble.",
+    statut: "nouveau",
+    corpsMetierCible: "Peinture",
+  },
+];
+
+export function getAffairesCAPEB(): AffaireCAPEB[] {
+  try {
+    const stored = localStorage.getItem(K_AFFAIRES_CAPEB);
+    if (stored) return JSON.parse(stored) as AffaireCAPEB[];
+    localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(AFFAIRES_DEMO));
+    return [...AFFAIRES_DEMO];
+  } catch { return [...AFFAIRES_DEMO]; }
+}
+
+export function saveAffaireCAPEB(affaire: AffaireCAPEB): void {
+  const list = getAffairesCAPEB();
+  const i = list.findIndex(a => a.id === affaire.id);
+  if (i !== -1) {
+    list[i] = affaire;
+  } else {
+    list.unshift(affaire);
+  }
+  localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(list));
+}
+
+export function deleteAffaireCAPEB(id: string): void {
+  localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(getAffairesCAPEB().filter(a => a.id !== id)));
+}
+
+export function markAffaireVue(id: string): void {
+  const list = getAffairesCAPEB();
+  const i = list.findIndex(a => a.id === id);
+  if (i !== -1) {
+    list[i].statut = "vu";
+    localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(list));
+  }
+}

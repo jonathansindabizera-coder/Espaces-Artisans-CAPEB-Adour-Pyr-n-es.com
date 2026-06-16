@@ -17,6 +17,7 @@ import { Route as AuthenticatedServicesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedPvRouteImport } from './routes/_authenticated/pv'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
+import { Route as AuthenticatedAffairesCAPEBRouteImport } from './routes/_authenticated/affaires-capeb'
 import { Route as AuthenticatedMarchesPublicsRouteImport } from './routes/_authenticated/marches-publics'
 import { Route as AuthenticatedMarchesPorteursRouteImport } from './routes/_authenticated/marches-porteurs'
 import { Route as AuthenticatedFormationsRouteImport } from './routes/_authenticated/formations'
@@ -63,6 +64,11 @@ const AuthenticatedPlanningRoute = AuthenticatedPlanningRouteImport.update({
   path: '/planning',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAffairesCAPEBRoute = AuthenticatedAffairesCAPEBRouteImport.update({
+  id: '/affaires-capeb',
+  path: '/affaires-capeb',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMarchesPublicsRoute =
   AuthenticatedMarchesPublicsRouteImport.update({
     id: '/marches-publics',
@@ -94,6 +100,7 @@ const AuthenticatedAvantagesRoute = AuthenticatedAvantagesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/affaires-capeb': typeof AuthenticatedAffairesCAPEBRoute
   '/avantages': typeof AuthenticatedAvantagesRoute
   '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/formations': typeof AuthenticatedFormationsRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/affaires-capeb': typeof AuthenticatedAffairesCAPEBRoute
   '/avantages': typeof AuthenticatedAvantagesRoute
   '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/formations': typeof AuthenticatedFormationsRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/affaires-capeb': typeof AuthenticatedAffairesCAPEBRoute
   '/_authenticated/avantages': typeof AuthenticatedAvantagesRoute
   '/_authenticated/bienvenue': typeof AuthenticatedBienvenueRoute
   '/_authenticated/formations': typeof AuthenticatedFormationsRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/affaires-capeb'
     | '/avantages'
     | '/bienvenue'
     | '/formations'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/affaires-capeb'
     | '/avantages'
     | '/bienvenue'
     | '/formations'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/affaires-capeb'
     | '/_authenticated/avantages'
     | '/_authenticated/bienvenue'
     | '/_authenticated/formations'
@@ -273,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBienvenueRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/affaires-capeb': {
+      id: '/_authenticated/affaires-capeb'
+      path: '/affaires-capeb'
+      fullPath: '/affaires-capeb'
+      preLoaderRoute: typeof AuthenticatedAffairesCAPEBRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/avantages': {
       id: '/_authenticated/avantages'
       path: '/avantages'
@@ -284,6 +303,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAffairesCAPEBRoute: typeof AuthenticatedAffairesCAPEBRoute
   AuthenticatedAvantagesRoute: typeof AuthenticatedAvantagesRoute
   AuthenticatedBienvenueRoute: typeof AuthenticatedBienvenueRoute
   AuthenticatedFormationsRoute: typeof AuthenticatedFormationsRoute
@@ -297,6 +317,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAffairesCAPEBRoute: AuthenticatedAffairesCAPEBRoute,
   AuthenticatedAvantagesRoute: AuthenticatedAvantagesRoute,
   AuthenticatedBienvenueRoute: AuthenticatedBienvenueRoute,
   AuthenticatedFormationsRoute: AuthenticatedFormationsRoute,

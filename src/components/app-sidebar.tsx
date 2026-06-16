@@ -1,14 +1,16 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FileSignature, Calendar, GraduationCap, Hammer, Plus, Users, Gift, LayoutDashboard, HeartHandshake, TrendingUp, Landmark } from "lucide-react";
+import { FileSignature, Calendar, GraduationCap, Hammer, Plus, Users, Gift, LayoutDashboard, HeartHandshake, TrendingUp, Landmark, Briefcase } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useState, useEffect } from "react";
+import { getAffairesCAPEB, DATA_EVENT } from "@/lib/local-data";
 
 const NAV_ITEMS = [
   { title: "Tableau de bord",     url: "/tableau-de-bord", icon: LayoutDashboard },
   { title: "PV & Suivi devis",    url: "/pv",              icon: FileSignature },
   { title: "Planning chantiers",  url: "/planning",        icon: Calendar },
   { title: "RH & Juridique",      url: "/rh",              icon: Users },
-  { title: "Marchés porteurs",    url: "/marches-porteurs", icon: TrendingUp },
+  { title: "Marchés porteurs",    url: "/marches-porteurs",  icon: TrendingUp },
+  { title: "Affaires CAPEB",      url: "/affaires-capeb",   icon: Briefcase },
   { title: "Marchés publics",     url: "/marches-publics",  icon: Landmark },
   { title: "Formations",          url: "/formations",      icon: GraduationCap },
   { title: "Nos services CAPEB",  url: "/services",        icon: HeartHandshake },
@@ -32,6 +34,14 @@ export function AppSidebar() {
   const collapsed = !open && !isMobile;
   const nomAffiche = "Artisan";
   const inits = initiales(nomAffiche);
+
+  const [nbNouvelles, setNbNouvelles] = useState(0);
+  useEffect(() => {
+    const update = () => setNbNouvelles(getAffairesCAPEB().filter(a => a.statut === "nouveau").length);
+    update();
+    window.addEventListener(DATA_EVENT, update);
+    return () => window.removeEventListener(DATA_EVENT, update);
+  }, []);
 
   return (
     <>
@@ -113,6 +123,7 @@ export function AppSidebar() {
           <div className="space-y-[3px]">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.url);
+            const badge = item.url === "/affaires-capeb" && nbNouvelles > 0 ? nbNouvelles : null;
             return (
               <Link
                 key={item.url}
@@ -132,16 +143,37 @@ export function AppSidebar() {
                   if (!active) e.currentTarget.style.background = "transparent";
                 }}
               >
-                <item.icon
-                  className="shrink-0"
-                  style={{ width: 19, height: 19, strokeWidth: 1.9, opacity: active ? 1 : 0.92 }}
-                />
+                <div className="relative shrink-0">
+                  <item.icon
+                    style={{ width: 19, height: 19, strokeWidth: 1.9, opacity: active ? 1 : 0.92 }}
+                  />
+                  {collapsed && badge !== null && (
+                    <span
+                      className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-[9px] font-bold text-white"
+                      style={{ minWidth: 14, height: 14, background: active ? "#E2001A" : "white", color: active ? "white" : "#E2001A", padding: "0 3px" }}
+                    >
+                      {badge}
+                    </span>
+                  )}
+                </div>
                 {!collapsed && (
                   <span
                     className="font-display text-[14.5px] tracking-wide flex-1"
                     style={{ fontWeight: active ? 600 : 500 }}
                   >
                     {item.title}
+                  </span>
+                )}
+                {!collapsed && badge !== null && (
+                  <span
+                    className="flex items-center justify-center rounded-full text-[10px] font-bold"
+                    style={{
+                      minWidth: 18, height: 18, padding: "0 5px",
+                      background: active ? "#E2001A" : "rgba(255,255,255,0.9)",
+                      color: active ? "white" : "#E2001A",
+                    }}
+                  >
+                    {badge}
                   </span>
                 )}
               </Link>
