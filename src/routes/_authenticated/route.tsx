@@ -7,7 +7,9 @@ import { loadProfilEntreprise } from "@/lib/local-data";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => { return {}; },
+  beforeLoad: async () => {
+    return {};
+  },
   component: () => (
     <SidebarProvider>
       <AuthenticatedLayout />
@@ -16,15 +18,17 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 const ROUTE_LABELS: Record<string, string> = {
-  "/bienvenue":  "Bienvenue",
-  "/pv":         "PV & Devis",
-  "/planning":   "Planning chantiers",
+  "/tableau-de-bord": "Tableau de bord",
+  "/bienvenue": "Bienvenue",
+  "/pv": "PV & Devis",
+  "/planning": "Planning chantiers",
+  "/affaires-capeb": "Demandes particuliers",
   "/formations": "Formations",
   "/marches-porteurs": "Marchés porteurs",
   "/marches-publics": "Marchés publics",
-  "/rh":         "RH & Juridique",
-  "/services":   "Nos services CAPEB",
-  "/avantages":  "Avantages CAPEB",
+  "/rh": "RH & Juridique",
+  "/services": "Nos services CAPEB",
+  "/avantages": "Avantages CAPEB",
 };
 
 function TopBar() {

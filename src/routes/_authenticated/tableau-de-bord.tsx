@@ -3,15 +3,41 @@ import { useState, useEffect, useCallback } from "react";
 import { format, addDays, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
-  AlertTriangle, Calendar, ChevronRight, Users, FileSignature,
-  GraduationCap, Gift, Info, CheckCircle, Clock, Mail, Phone, HeartHandshake, TrendingUp,
+  AlertTriangle,
+  Calendar,
+  ChevronRight,
+  Users,
+  FileSignature,
+  GraduationCap,
+  Gift,
+  Info,
+  CheckCircle,
+  Clock,
+  Mail,
+  Phone,
+  HeartHandshake,
+  TrendingUp,
+  Briefcase,
 } from "lucide-react";
 import {
-  loadChantiers, loadClients, loadEmployesRH, loadAffectations, loadAbsences,
-  loadRessources, loadAffectationsRessources, loadAvantages, loadProfilEntreprise,
+  loadChantiers,
+  loadClients,
+  loadEmployesRH,
+  loadAffectations,
+  loadAbsences,
+  loadRessources,
+  loadAffectationsRessources,
+  loadAvantages,
+  loadProfilEntreprise,
+  getAffairesCAPEB,
   DATA_EVENT,
-  type Chantier, type Client, type EmployeRH, type Affectation, type Absence,
-  type Ressource, type AffectationRessource,
+  type Chantier,
+  type Client,
+  type EmployeRH,
+  type Affectation,
+  type Absence,
+  type Ressource,
+  type AffectationRessource,
 } from "@/lib/local-data";
 import { CHARGES_DEV } from "@/lib/contacts-capeb";
 
@@ -38,7 +64,7 @@ function fmtDate(d: Date) {
 
 function isAbsentOn(salarieId: string, dateStr: string, absences: Absence[]): boolean {
   return absences.some(
-    (a) => a.salarie_id === salarieId && a.date_debut <= dateStr && a.date_fin >= dateStr
+    (a) => a.salarie_id === salarieId && a.date_debut <= dateStr && a.date_fin >= dateStr,
   );
 }
 
@@ -49,7 +75,11 @@ function pluriel(n: number, mot: string, motPluriel?: string) {
 // ── Composants enfants ────────────────────────────────────────────────────────
 
 function KpiCard({
-  label, value, color, icon, lien,
+  label,
+  value,
+  color,
+  icon,
+  lien,
 }: {
   label: string;
   value: string | number;
@@ -61,8 +91,12 @@ function KpiCard({
     <Link
       to={lien}
       style={{
-        display: "block", background: "white", borderRadius: 12,
-        padding: "12px 14px", border: "1.5px solid #E5E0DA", textDecoration: "none",
+        display: "block",
+        background: "white",
+        borderRadius: 12,
+        padding: "12px 14px",
+        border: "1.5px solid #E5E0DA",
+        textDecoration: "none",
       }}
     >
       <span style={{ color, display: "block", marginBottom: 6 }}>{icon}</span>
@@ -73,7 +107,11 @@ function KpiCard({
 }
 
 function ResumCard({
-  icon, title, lien, lignes, vide,
+  icon,
+  title,
+  lien,
+  lignes,
+  vide,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -85,15 +123,23 @@ function ResumCard({
     <Link
       to={lien}
       style={{
-        display: "flex", flexDirection: "column", background: "white",
-        borderRadius: 12, padding: "14px 16px", border: "1.5px solid #E5E0DA",
-        textDecoration: "none", gap: 8,
+        display: "flex",
+        flexDirection: "column",
+        background: "white",
+        borderRadius: 12,
+        padding: "14px 16px",
+        border: "1.5px solid #E5E0DA",
+        textDecoration: "none",
+        gap: 8,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "#E2001A" }}>{icon}</span>
-          <span className="font-display" style={{ fontSize: 14, fontWeight: 700, color: "#1A1714" }}>
+          <span
+            className="font-display"
+            style={{ fontSize: 14, fontWeight: 700, color: "#1A1714" }}
+          >
             {title}
           </span>
         </div>
@@ -111,7 +157,10 @@ function ResumCard({
 }
 
 function ContactDevCard({
-  secteur, nom, email, telephone,
+  secteur,
+  nom,
+  email,
+  telephone,
 }: {
   secteur: string;
   nom: string;
@@ -121,8 +170,12 @@ function ContactDevCard({
   return (
     <div
       style={{
-        display: "flex", flexDirection: "column", background: "white",
-        borderRadius: 14, padding: "14px 16px", border: "1.5px solid #E5E0DA",
+        display: "flex",
+        flexDirection: "column",
+        background: "white",
+        borderRadius: 14,
+        padding: "14px 16px",
+        border: "1.5px solid #E5E0DA",
         gap: 10,
       }}
     >
@@ -130,8 +183,11 @@ function ContactDevCard({
         <div
           className="font-display"
           style={{
-            fontSize: 15, fontWeight: 700, color: "#1A1714",
-            textTransform: "uppercase", letterSpacing: "0.04em",
+            fontSize: 15,
+            fontWeight: 700,
+            color: "#1A1714",
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
           }}
         >
           {secteur}
@@ -142,9 +198,17 @@ function ContactDevCard({
         <a
           href={`mailto:${email}`}
           style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            padding: "8px 12px", borderRadius: 10, background: "#E2001A", color: "white",
-            fontSize: 12, fontWeight: 700, textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            padding: "8px 12px",
+            borderRadius: 10,
+            background: "#E2001A",
+            color: "white",
+            fontSize: 12,
+            fontWeight: 700,
+            textDecoration: "none",
           }}
         >
           <Mail size={14} /> Envoyer un email
@@ -153,9 +217,18 @@ function ContactDevCard({
           <a
             href={`tel:${telephone.replace(/\s+/g, "")}`}
             style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              padding: "8px 12px", borderRadius: 10, background: "white", color: "#4A453F",
-              fontSize: 12, fontWeight: 700, textDecoration: "none", border: "1.5px solid #E5E0DA",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              padding: "8px 12px",
+              borderRadius: 10,
+              background: "white",
+              color: "#4A453F",
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: "none",
+              border: "1.5px solid #E5E0DA",
             }}
           >
             <Phone size={14} /> Appeler
@@ -177,6 +250,7 @@ function TableauDeBordPage() {
   const [ressources, setRessources] = useState<Ressource[]>([]);
   const [affRessources, setAffRessources] = useState<AffectationRessource[]>([]);
   const [avantages, setAvantages] = useState<ReturnType<typeof loadAvantages>>([]);
+  const [affairesCAPEB, setAffairesCAPEB] = useState<ReturnType<typeof getAffairesCAPEB>>([]);
   const [nomEntreprise, setNomEntreprise] = useState("");
 
   const reload = useCallback(() => {
@@ -188,6 +262,7 @@ function TableauDeBordPage() {
     setRessources(loadRessources());
     setAffRessources(loadAffectationsRessources());
     setAvantages(loadAvantages());
+    setAffairesCAPEB(getAffairesCAPEB());
     const profil = loadProfilEntreprise();
     setNomEntreprise(profil.nom || "");
   }, []);
@@ -211,6 +286,10 @@ function TableauDeBordPage() {
   const nbEnCours = chantiers.filter((c) => c.statut === "travaux_en_cours").length;
   const nbPvSigner = chantiers.filter((c) => c.statut === "pv_a_signer").length;
   const nbDevisAttente = chantiers.filter((c) => c.statut === "devis_envoye").length;
+  const nbDemandesNouvelles = affairesCAPEB.filter((a) => a.statut === "nouveau").length;
+  const nbDemandesAQualifier = affairesCAPEB.filter(
+    (a) => (a.validation ?? "validee") === "a_valider",
+  ).length;
   const empActifs = employes.length;
   const tauxOcc =
     empActifs > 0
@@ -228,9 +307,7 @@ function TableauDeBordPage() {
       id: "pv-signer",
       niveau: "urgent",
       label: `${pvList.length} ${pluriel(pvList.length, "PV")} en attente de signature`,
-      detail: pvList
-        .map((c) => clients.find((cl) => cl.id === c.client_id)?.nom ?? "—")
-        .join(", "),
+      detail: pvList.map((c) => clients.find((cl) => cl.id === c.client_id)?.nom ?? "—").join(", "),
       lien: "/pv",
     });
   }
@@ -250,16 +327,14 @@ function TableauDeBordPage() {
   }
 
   // Absent mais affecté aujourd'hui
-  const conflitsAbs = affAujourdHui.filter((a) =>
-    isAbsentOn(a.salarie_id, todayStr, absences)
-  );
+  const conflitsAbs = affAujourdHui.filter((a) => isAbsentOn(a.salarie_id, todayStr, absences));
   if (conflitsAbs.length > 0) {
     const noms = [
       ...new Set(
         conflitsAbs.map((a) => {
           const e = employes.find((emp) => emp.id === a.salarie_id);
           return e ? `${e.prenom} ${e.nom}` : "—";
-        })
+        }),
       ),
     ];
     alertes.push({
@@ -276,8 +351,7 @@ function TableauDeBordPage() {
     (c) =>
       c.statut === "travaux_en_cours" &&
       (c.nb_personnes_requises ?? 0) > 0 &&
-      affAujourdHui.filter((a) => a.chantier_id === c.id).length <
-        (c.nb_personnes_requises ?? 0)
+      affAujourdHui.filter((a) => a.chantier_id === c.id).length < (c.nb_personnes_requises ?? 0),
   );
   if (sousList.length > 0) {
     alertes.push({
@@ -320,7 +394,7 @@ function TableauDeBordPage() {
 
   // Absences cette semaine
   const absSemaine = absences.filter((a) =>
-    weekDays.some((d) => a.date_debut <= d && a.date_fin >= d)
+    weekDays.some((d) => a.date_debut <= d && a.date_fin >= d),
   );
   if (absSemaine.length > 0) {
     const nbEmpAbs = new Set(absSemaine.map((a) => a.salarie_id)).size;
@@ -351,19 +425,17 @@ function TableauDeBordPage() {
   // ── Résumés ──
   const nbChantiersActifsSemaine = new Set(affsWeek.map((a) => a.chantier_id)).size;
   const empNonAffectesAujourdHui = employes.filter(
-    (e) => !affAujourdHui.some((a) => a.salarie_id === e.id)
+    (e) => !affAujourdHui.some((a) => a.salarie_id === e.id),
   ).length;
   const nbPvEnCours = chantiers.filter(
-    (c) => c.statut === "devis_signe" || c.statut === "travaux_en_cours"
+    (c) => c.statut === "devis_signe" || c.statut === "travaux_en_cours",
   ).length;
   const nbAvantages = avantages.length;
 
   // ── Helpers visuels ──
   function alerteStyle(niveau: Alerte["niveau"]) {
-    if (niveau === "urgent")
-      return { bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA" };
-    if (niveau === "attention")
-      return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
+    if (niveau === "urgent") return { bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA" };
+    if (niveau === "attention") return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
     return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
   }
 
@@ -406,8 +478,12 @@ function TableauDeBordPage() {
       <section>
         <div
           style={{
-            fontSize: 11, fontWeight: 700, color: "#8B847D",
-            textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#8B847D",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 8,
           }}
         >
           À faire
@@ -416,9 +492,13 @@ function TableauDeBordPage() {
         {alertes.length === 0 ? (
           <div
             style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "12px 16px", borderRadius: 10,
-              background: "#F0FDF4", border: "1px solid #BBF7D0",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 16px",
+              borderRadius: 10,
+              background: "#F0FDF4",
+              border: "1px solid #BBF7D0",
             }}
           >
             <CheckCircle size={15} style={{ color: "#15803D", flexShrink: 0 }} />
@@ -435,26 +515,32 @@ function TableauDeBordPage() {
                   key={a.id}
                   to={a.lien}
                   style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "11px 14px", borderRadius: 10,
-                    background: s.bg, border: `1px solid ${s.border}`,
-                    textDecoration: "none", minHeight: 48,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "11px 14px",
+                    borderRadius: 10,
+                    background: s.bg,
+                    border: `1px solid ${s.border}`,
+                    textDecoration: "none",
+                    minHeight: 48,
                   }}
                 >
                   <span style={{ color: s.color, flexShrink: 0 }}>
-                    {a.niveau === "info"
-                      ? <Info size={15} />
-                      : <AlertTriangle size={15} />}
+                    {a.niveau === "info" ? <Info size={15} /> : <AlertTriangle size={15} />}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: s.color }}>
-                      {a.label}
-                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: s.color }}>{a.label}</div>
                     {a.detail && (
                       <div
                         style={{
-                          fontSize: 11, color: s.color, opacity: 0.7, marginTop: 1,
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          fontSize: 11,
+                          color: s.color,
+                          opacity: 0.7,
+                          marginTop: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {a.detail}
@@ -473,8 +559,12 @@ function TableauDeBordPage() {
       <section>
         <div
           style={{
-            fontSize: 11, fontWeight: 700, color: "#8B847D",
-            textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#8B847D",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 8,
           }}
         >
           Indicateurs
@@ -508,6 +598,13 @@ function TableauDeBordPage() {
             lien="/pv"
           />
           <KpiCard
+            label="Demandes particuliers"
+            value={nbDemandesNouvelles}
+            color={nbDemandesNouvelles > 0 ? "#E2001A" : "#8B847D"}
+            icon={<Briefcase size={16} />}
+            lien="/affaires-capeb"
+          />
+          <KpiCard
             label="Occupation équipe"
             value={`${tauxOcc}%`}
             color={tauxColor}
@@ -528,14 +625,19 @@ function TableauDeBordPage() {
       <section>
         <div
           style={{
-            display: "flex", alignItems: "center",
-            justifyContent: "space-between", marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
           }}
         >
           <div
             style={{
-              fontSize: 11, fontWeight: 700, color: "#8B847D",
-              textTransform: "uppercase", letterSpacing: "0.1em",
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#8B847D",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
             }}
           >
             Mon planning aujourd'hui
@@ -543,8 +645,13 @@ function TableauDeBordPage() {
           <Link
             to="/planning"
             style={{
-              fontSize: 12, color: "#E2001A", fontWeight: 600,
-              textDecoration: "none", display: "flex", alignItems: "center", gap: 3,
+              fontSize: 12,
+              color: "#E2001A",
+              fontWeight: 600,
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 3,
             }}
           >
             Voir le planning <ChevronRight size={12} />
@@ -554,8 +661,11 @@ function TableauDeBordPage() {
         {planningAujourdHui.length === 0 ? (
           <div
             style={{
-              padding: "24px 16px", textAlign: "center", background: "white",
-              borderRadius: 12, border: "1.5px solid #E5E0DA",
+              padding: "24px 16px",
+              textAlign: "center",
+              background: "white",
+              borderRadius: 12,
+              border: "1.5px solid #E5E0DA",
             }}
           >
             <p style={{ fontSize: 13, color: "#8B847D", marginBottom: 8 }}>
@@ -575,8 +685,12 @@ function TableauDeBordPage() {
                 key={chantier.id}
                 to="/planning"
                 style={{
-                  display: "block", padding: "12px 14px", background: "white",
-                  borderRadius: 12, border: "1.5px solid #E5E0DA", textDecoration: "none",
+                  display: "block",
+                  padding: "12px 14px",
+                  background: "white",
+                  borderRadius: 12,
+                  border: "1.5px solid #E5E0DA",
+                  textDecoration: "none",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -590,16 +704,22 @@ function TableauDeBordPage() {
                     {(salaries.length > 0 || res.length > 0) && (
                       <div
                         style={{
-                          display: "flex", gap: 5, flexWrap: "wrap", marginTop: 7,
+                          display: "flex",
+                          gap: 5,
+                          flexWrap: "wrap",
+                          marginTop: 7,
                         }}
                       >
                         {salaries.map((emp) => (
                           <span
                             key={emp.id}
                             style={{
-                              fontSize: 10, fontWeight: 600,
-                              padding: "2px 7px", borderRadius: 20,
-                              background: "#F1EFED", color: "#4A453F",
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: "2px 7px",
+                              borderRadius: 20,
+                              background: "#F1EFED",
+                              color: "#4A453F",
                             }}
                           >
                             {emp.prenom} {emp.nom}
@@ -609,9 +729,12 @@ function TableauDeBordPage() {
                           <span
                             key={r.id}
                             style={{
-                              fontSize: 10, fontWeight: 600,
-                              padding: "2px 7px", borderRadius: 20,
-                              background: "#E8F4FD", color: "#1565C0",
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: "2px 7px",
+                              borderRadius: 20,
+                              background: "#E8F4FD",
+                              color: "#1565C0",
                             }}
                           >
                             {r.nom}
@@ -635,8 +758,12 @@ function TableauDeBordPage() {
       <section>
         <div
           style={{
-            fontSize: 11, fontWeight: 700, color: "#8B847D",
-            textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#8B847D",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 8,
           }}
         >
           Résumés
@@ -693,7 +820,9 @@ function TableauDeBordPage() {
             lien="/avantages"
             lignes={
               nbAvantages > 0
-                ? [`${nbAvantages} avantage${nbAvantages > 1 ? "s" : ""} disponible${nbAvantages > 1 ? "s" : ""}`]
+                ? [
+                    `${nbAvantages} avantage${nbAvantages > 1 ? "s" : ""} disponible${nbAvantages > 1 ? "s" : ""}`,
+                  ]
                 : ["Découvrez les avantages réservés aux artisans CAPEB"]
             }
             vide={false}
@@ -711,6 +840,20 @@ function TableauDeBordPage() {
             lien="/marches-porteurs"
             lignes={["Où vous positionner, et comment être accompagné par la CAPEB"]}
             vide={false}
+          />
+          <ResumCard
+            icon={<Briefcase size={18} />}
+            title="Demandes particuliers"
+            lien="/affaires-capeb"
+            lignes={
+              affairesCAPEB.length > 0
+                ? [
+                    `${nbDemandesNouvelles} nouvelle${nbDemandesNouvelles > 1 ? "s" : ""} demande${nbDemandesNouvelles > 1 ? "s" : ""} à consulter`,
+                    `${nbDemandesAQualifier} demande${nbDemandesAQualifier > 1 ? "s" : ""} à qualifier`,
+                  ]
+                : ["Centralisez les demandes de particuliers qualifiées"]
+            }
+            vide={affairesCAPEB.length === 0}
           />
         </div>
       </section>

@@ -1,20 +1,33 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FileSignature, Calendar, GraduationCap, Hammer, Plus, Users, Gift, LayoutDashboard, HeartHandshake, TrendingUp, Landmark, Briefcase } from "lucide-react";
+import {
+  FileSignature,
+  Calendar,
+  GraduationCap,
+  Hammer,
+  Plus,
+  Users,
+  Gift,
+  LayoutDashboard,
+  HeartHandshake,
+  TrendingUp,
+  Landmark,
+  Briefcase,
+} from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useState, useEffect } from "react";
 import { getAffairesCAPEB, DATA_EVENT } from "@/lib/local-data";
 
 const NAV_ITEMS = [
-  { title: "Tableau de bord",     url: "/tableau-de-bord", icon: LayoutDashboard },
-  { title: "PV & Suivi devis",    url: "/pv",              icon: FileSignature },
-  { title: "Planning chantiers",  url: "/planning",        icon: Calendar },
-  { title: "RH & Juridique",      url: "/rh",              icon: Users },
-  { title: "Marchés porteurs",    url: "/marches-porteurs",  icon: TrendingUp },
-  { title: "Affaires CAPEB",      url: "/affaires-capeb",   icon: Briefcase },
-  { title: "Marchés publics",     url: "/marches-publics",  icon: Landmark },
-  { title: "Formations",          url: "/formations",      icon: GraduationCap },
-  { title: "Nos services CAPEB",  url: "/services",        icon: HeartHandshake },
-  { title: "Avantages CAPEB",     url: "/avantages",       icon: Gift },
+  { title: "Tableau de bord", url: "/tableau-de-bord", icon: LayoutDashboard },
+  { title: "PV & Suivi devis", url: "/pv", icon: FileSignature },
+  { title: "Planning chantiers", url: "/planning", icon: Calendar },
+  { title: "RH & Juridique", url: "/rh", icon: Users },
+  { title: "Marchés porteurs", url: "/marches-porteurs", icon: TrendingUp },
+  { title: "Demandes particuliers", url: "/affaires-capeb", icon: Briefcase },
+  { title: "Marchés publics", url: "/marches-publics", icon: Landmark },
+  { title: "Formations", url: "/formations", icon: GraduationCap },
+  { title: "Nos services CAPEB", url: "/services", icon: HeartHandshake },
+  { title: "Avantages CAPEB", url: "/avantages", icon: Gift },
 ];
 
 function initiales(nom: string): string {
@@ -37,7 +50,8 @@ export function AppSidebar() {
 
   const [nbNouvelles, setNbNouvelles] = useState(0);
   useEffect(() => {
-    const update = () => setNbNouvelles(getAffairesCAPEB().filter(a => a.statut === "nouveau").length);
+    const update = () =>
+      setNbNouvelles(getAffairesCAPEB().filter((a) => a.statut === "nouveau").length);
     update();
     window.addEventListener(DATA_EVENT, update);
     return () => window.removeEventListener(DATA_EVENT, update);
@@ -70,11 +84,16 @@ export function AppSidebar() {
       >
         {/* ── LOGO ── */}
         <div className="flex items-center gap-3 px-3 pt-5 pb-4">
-          <Link to="/tableau-de-bord" className="flex items-center gap-3 min-w-0" onClick={() => isMobile && setOpen(false)}>
+          <Link
+            to="/tableau-de-bord"
+            className="flex items-center gap-3 min-w-0"
+            onClick={() => isMobile && setOpen(false)}
+          >
             <div
               className="flex shrink-0 items-center justify-center rounded-xl bg-white"
               style={{
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 boxShadow: "0 2px 8px rgba(0,0,0,.18)",
               }}
             >
@@ -82,8 +101,12 @@ export function AppSidebar() {
             </div>
             {!collapsed && (
               <div className="flex flex-col leading-tight min-w-0">
-                <span className="font-display text-[15px] text-white tracking-wide">Espace Artisan</span>
-                <span className="text-[10px] uppercase tracking-widest text-white/70">CAPEB Adour-Pyrénées</span>
+                <span className="font-display text-[15px] text-white tracking-wide">
+                  Espace Artisan
+                </span>
+                <span className="text-[10px] uppercase tracking-widest text-white/70">
+                  CAPEB Adour-Pyrénées
+                </span>
               </div>
             )}
           </Link>
@@ -121,64 +144,77 @@ export function AppSidebar() {
             </div>
           )}
           <div className="space-y-[3px]">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(item.url);
-            const badge = item.url === "/affaires-capeb" && nbNouvelles > 0 ? nbNouvelles : null;
-            return (
-              <Link
-                key={item.url}
-                to={item.url}
-                onClick={() => isMobile && setOpen(false)}
-                className="flex items-center gap-3 rounded-[11px] px-3 transition-all duration-150 select-none"
-                style={{
-                  minHeight: 44,
-                  background: active ? "white" : "transparent",
-                  boxShadow: active ? "0 4px 14px rgba(0,0,0,.14)" : "none",
-                  color: active ? "#A30012" : "rgba(255,255,255,0.88)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.13)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) e.currentTarget.style.background = "transparent";
-                }}
-              >
-                <div className="relative shrink-0">
-                  <item.icon
-                    style={{ width: 19, height: 19, strokeWidth: 1.9, opacity: active ? 1 : 0.92 }}
-                  />
-                  {collapsed && badge !== null && (
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(item.url);
+              const badge = item.url === "/affaires-capeb" && nbNouvelles > 0 ? nbNouvelles : null;
+              return (
+                <Link
+                  key={item.url}
+                  to={item.url}
+                  onClick={() => isMobile && setOpen(false)}
+                  className="flex items-center gap-3 rounded-[11px] px-3 transition-all duration-150 select-none"
+                  style={{
+                    minHeight: 44,
+                    background: active ? "white" : "transparent",
+                    boxShadow: active ? "0 4px 14px rgba(0,0,0,.14)" : "none",
+                    color: active ? "#A30012" : "rgba(255,255,255,0.88)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.13)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <div className="relative shrink-0">
+                    <item.icon
+                      style={{
+                        width: 19,
+                        height: 19,
+                        strokeWidth: 1.9,
+                        opacity: active ? 1 : 0.92,
+                      }}
+                    />
+                    {collapsed && badge !== null && (
+                      <span
+                        className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-[9px] font-bold text-white"
+                        style={{
+                          minWidth: 14,
+                          height: 14,
+                          background: active ? "#E2001A" : "white",
+                          color: active ? "white" : "#E2001A",
+                          padding: "0 3px",
+                        }}
+                      >
+                        {badge}
+                      </span>
+                    )}
+                  </div>
+                  {!collapsed && (
                     <span
-                      className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-[9px] font-bold text-white"
-                      style={{ minWidth: 14, height: 14, background: active ? "#E2001A" : "white", color: active ? "white" : "#E2001A", padding: "0 3px" }}
+                      className="font-display text-[14.5px] tracking-wide flex-1"
+                      style={{ fontWeight: active ? 600 : 500 }}
+                    >
+                      {item.title}
+                    </span>
+                  )}
+                  {!collapsed && badge !== null && (
+                    <span
+                      className="flex items-center justify-center rounded-full text-[10px] font-bold"
+                      style={{
+                        minWidth: 18,
+                        height: 18,
+                        padding: "0 5px",
+                        background: active ? "#E2001A" : "rgba(255,255,255,0.9)",
+                        color: active ? "white" : "#E2001A",
+                      }}
                     >
                       {badge}
                     </span>
                   )}
-                </div>
-                {!collapsed && (
-                  <span
-                    className="font-display text-[14.5px] tracking-wide flex-1"
-                    style={{ fontWeight: active ? 600 : 500 }}
-                  >
-                    {item.title}
-                  </span>
-                )}
-                {!collapsed && badge !== null && (
-                  <span
-                    className="flex items-center justify-center rounded-full text-[10px] font-bold"
-                    style={{
-                      minWidth: 18, height: 18, padding: "0 5px",
-                      background: active ? "#E2001A" : "rgba(255,255,255,0.9)",
-                      color: active ? "white" : "#E2001A",
-                    }}
-                  >
-                    {badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+                </Link>
+              );
+            })}
           </div>
         </nav>
 

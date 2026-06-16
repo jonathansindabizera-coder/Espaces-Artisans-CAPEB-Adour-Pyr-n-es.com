@@ -31,19 +31,25 @@ export type Chantier = {
   longitude?: number | null;
 };
 
-const K_CLIENTS  = "ea_clients";
+const K_CLIENTS = "ea_clients";
 const K_CHANTIERS = "ea_chantiers";
 
 export const DATA_EVENT = "ea_data_updated";
 
 export function loadClients(): Client[] {
-  try { return JSON.parse(localStorage.getItem(K_CLIENTS) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_CLIENTS) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 
 export function loadChantiers(): Chantier[] {
-  try { return JSON.parse(localStorage.getItem(K_CHANTIERS) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_CHANTIERS) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 
 export function addClient(data: Omit<Client, "id">): Client {
@@ -64,16 +70,19 @@ export function addChantier(data: Omit<Chantier, "id" | "date_creation">): Chant
 
 export function updateChantierStatut(id: string, statut: StatutValue): void {
   const list = loadChantiers();
-  const i = list.findIndex(c => c.id === id);
+  const i = list.findIndex((c) => c.id === id);
   if (i !== -1) {
     list[i].statut = statut;
     localStorage.setItem(K_CHANTIERS, JSON.stringify(list));
   }
 }
 
-export function updateChantier(id: string, data: Partial<Omit<Chantier, "id" | "date_creation">>): void {
+export function updateChantier(
+  id: string,
+  data: Partial<Omit<Chantier, "id" | "date_creation">>,
+): void {
   const list = loadChantiers();
-  const i = list.findIndex(c => c.id === id);
+  const i = list.findIndex((c) => c.id === id);
   if (i !== -1) {
     list[i] = { ...list[i], ...data };
     localStorage.setItem(K_CHANTIERS, JSON.stringify(list));
@@ -145,9 +154,9 @@ export type ParametresCharges = {
   cout_premier_embauche: number;
 };
 
-const K_EMPLOYES_RH    = "ea_employes_rh";
-const K_CONTRATS       = "ea_contrats_generes";
-const K_PROFIL         = "ea_profil_entreprise";
+const K_EMPLOYES_RH = "ea_employes_rh";
+const K_CONTRATS = "ea_contrats_generes";
+const K_PROFIL = "ea_profil_entreprise";
 const K_PARAMS_CHARGES = "ea_params_charges";
 
 export const PARAMETRES_CHARGES_DEFAUT: ParametresCharges = {
@@ -155,8 +164,8 @@ export const PARAMETRES_CHARGES_DEFAUT: ParametresCharges = {
   cotisation_cibtp: 20,
   oppbtp: 0.11,
   chomage_intemp: 0.65,
-  prevoyance_probtp: 2.80,
-  atmp: 3.50,
+  prevoyance_probtp: 2.8,
+  atmp: 3.5,
   mutuelle_mensuelle: 30,
   indemnite_trajet: 80,
   indemnite_repas: 200,
@@ -164,17 +173,30 @@ export const PARAMETRES_CHARGES_DEFAUT: ParametresCharges = {
 };
 
 const PROFIL_ENTREPRISE_DEFAUT: ProfilEntreprise = {
-  nom: "", siret: "", adresse: "", telephone: "", email: "",
-  forme_juridique: "", code_ape: "", tva: "", gerant: "",
-  code_postal: "", ville: "", site_web: "",
-  assurance: "", num_police: "", qualifications: "",
+  nom: "",
+  siret: "",
+  adresse: "",
+  telephone: "",
+  email: "",
+  forme_juridique: "",
+  code_ape: "",
+  tva: "",
+  gerant: "",
+  code_postal: "",
+  ville: "",
+  site_web: "",
+  assurance: "",
+  num_police: "",
+  qualifications: "",
 };
 
 export function loadProfilEntreprise(): ProfilEntreprise {
   try {
     const s = localStorage.getItem(K_PROFIL);
     return s ? { ...PROFIL_ENTREPRISE_DEFAUT, ...JSON.parse(s) } : { ...PROFIL_ENTREPRISE_DEFAUT };
-  } catch { return { ...PROFIL_ENTREPRISE_DEFAUT }; }
+  } catch {
+    return { ...PROFIL_ENTREPRISE_DEFAUT };
+  }
 }
 export function saveProfilEntreprise(p: ProfilEntreprise): void {
   localStorage.setItem(K_PROFIL, JSON.stringify(p));
@@ -184,15 +206,20 @@ export function loadParametresCharges(): ParametresCharges {
   try {
     const s = localStorage.getItem(K_PARAMS_CHARGES);
     return s ? { ...PARAMETRES_CHARGES_DEFAUT, ...JSON.parse(s) } : PARAMETRES_CHARGES_DEFAUT;
-  } catch { return PARAMETRES_CHARGES_DEFAUT; }
+  } catch {
+    return PARAMETRES_CHARGES_DEFAUT;
+  }
 }
 export function saveParametresCharges(p: ParametresCharges): void {
   localStorage.setItem(K_PARAMS_CHARGES, JSON.stringify(p));
 }
 
 export function loadEmployesRH(): EmployeRH[] {
-  try { return JSON.parse(localStorage.getItem(K_EMPLOYES_RH) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_EMPLOYES_RH) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 export function addEmployeRH(data: Omit<EmployeRH, "id" | "created_at">): EmployeRH {
   const e: EmployeRH = { id: crypto.randomUUID(), created_at: new Date().toISOString(), ...data };
@@ -201,24 +228,36 @@ export function addEmployeRH(data: Omit<EmployeRH, "id" | "created_at">): Employ
   localStorage.setItem(K_EMPLOYES_RH, JSON.stringify(list));
   return e;
 }
-export function updateEmployeRH(id: string, data: Partial<Omit<EmployeRH, "id" | "created_at">>): void {
+export function updateEmployeRH(
+  id: string,
+  data: Partial<Omit<EmployeRH, "id" | "created_at">>,
+): void {
   const list = loadEmployesRH();
-  const i = list.findIndex(e => e.id === id);
+  const i = list.findIndex((e) => e.id === id);
   if (i !== -1) {
     list[i] = { ...list[i], ...data };
     localStorage.setItem(K_EMPLOYES_RH, JSON.stringify(list));
   }
 }
 export function removeEmployeRH(id: string): void {
-  localStorage.setItem(K_EMPLOYES_RH, JSON.stringify(loadEmployesRH().filter(e => e.id !== id)));
+  localStorage.setItem(K_EMPLOYES_RH, JSON.stringify(loadEmployesRH().filter((e) => e.id !== id)));
 }
 
 export function loadContratsGeneres(): ContratGenere[] {
-  try { return JSON.parse(localStorage.getItem(K_CONTRATS) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_CONTRATS) ?? "[]");
+  } catch {
+    return [];
+  }
 }
-export function addContratGenere(data: Omit<ContratGenere, "id" | "date_generation">): ContratGenere {
-  const c: ContratGenere = { id: crypto.randomUUID(), date_generation: new Date().toISOString(), ...data };
+export function addContratGenere(
+  data: Omit<ContratGenere, "id" | "date_generation">,
+): ContratGenere {
+  const c: ContratGenere = {
+    id: crypto.randomUUID(),
+    date_generation: new Date().toISOString(),
+    ...data,
+  };
   const list = loadContratsGeneres();
   list.unshift(c);
   localStorage.setItem(K_CONTRATS, JSON.stringify(list));
@@ -245,8 +284,11 @@ export type AvantageCapeb = {
 const K_AVANTAGES = "ea_avantages_capeb";
 
 export function loadAvantages(): AvantageCapeb[] {
-  try { return JSON.parse(localStorage.getItem(K_AVANTAGES) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_AVANTAGES) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 export function replaceAvantages(list: AvantageCapeb[]): void {
   localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
@@ -260,14 +302,14 @@ export function addAvantage(data: Omit<AvantageCapeb, "id">): AvantageCapeb {
 }
 export function updateAvantage(id: string, data: Partial<Omit<AvantageCapeb, "id">>): void {
   const list = loadAvantages();
-  const i = list.findIndex(a => a.id === id);
+  const i = list.findIndex((a) => a.id === id);
   if (i !== -1) {
     list[i] = { ...list[i], ...data };
     localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
   }
 }
 export function removeAvantage(id: string): void {
-  const list = loadAvantages().filter(a => a.id !== id);
+  const list = loadAvantages().filter((a) => a.id !== id);
   localStorage.setItem(K_AVANTAGES, JSON.stringify(list));
 }
 
@@ -288,12 +330,15 @@ export type Affectation = {
   date: string;
 };
 
-const K_ABSENCES     = "ea_absences";
+const K_ABSENCES = "ea_absences";
 const K_AFFECTATIONS = "ea_affectations";
 
 export function loadAbsences(): Absence[] {
-  try { return JSON.parse(localStorage.getItem(K_ABSENCES) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_ABSENCES) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 export function addAbsence(data: Omit<Absence, "id">): Absence {
   const a: Absence = { id: crypto.randomUUID(), ...data };
@@ -303,13 +348,16 @@ export function addAbsence(data: Omit<Absence, "id">): Absence {
   return a;
 }
 export function removeAbsence(id: string): void {
-  const list = loadAbsences().filter(a => a.id !== id);
+  const list = loadAbsences().filter((a) => a.id !== id);
   localStorage.setItem(K_ABSENCES, JSON.stringify(list));
 }
 
 export function loadAffectations(): Affectation[] {
-  try { return JSON.parse(localStorage.getItem(K_AFFECTATIONS) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_AFFECTATIONS) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 export function addAffectation(data: Omit<Affectation, "id">): Affectation {
   const a: Affectation = { id: crypto.randomUUID(), ...data };
@@ -319,12 +367,12 @@ export function addAffectation(data: Omit<Affectation, "id">): Affectation {
   return a;
 }
 export function removeAffectation(id: string): void {
-  const list = loadAffectations().filter(a => a.id !== id);
+  const list = loadAffectations().filter((a) => a.id !== id);
   localStorage.setItem(K_AFFECTATIONS, JSON.stringify(list));
 }
 export function replaceAffectation(id: string, data: Partial<Omit<Affectation, "id">>): void {
   const list = loadAffectations();
-  const i = list.findIndex(a => a.id === id);
+  const i = list.findIndex((a) => a.id === id);
   if (i !== -1) {
     list[i] = { ...list[i], ...data };
     localStorage.setItem(K_AFFECTATIONS, JSON.stringify(list));
@@ -348,12 +396,15 @@ export type AffectationRessource = {
   date: string;
 };
 
-const K_RESSOURCES     = "ea_ressources";
+const K_RESSOURCES = "ea_ressources";
 const K_AFF_RESSOURCES = "ea_aff_ressources";
 
 export function loadRessources(): Ressource[] {
-  try { return JSON.parse(localStorage.getItem(K_RESSOURCES) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_RESSOURCES) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 export function addRessource(data: Omit<Ressource, "id">): Ressource {
   const r: Ressource = { id: crypto.randomUUID(), ...data };
@@ -364,18 +415,26 @@ export function addRessource(data: Omit<Ressource, "id">): Ressource {
 }
 export function updateRessource(id: string, data: Partial<Omit<Ressource, "id">>): void {
   const list = loadRessources();
-  const i = list.findIndex(r => r.id === id);
-  if (i !== -1) { list[i] = { ...list[i], ...data }; localStorage.setItem(K_RESSOURCES, JSON.stringify(list)); }
+  const i = list.findIndex((r) => r.id === id);
+  if (i !== -1) {
+    list[i] = { ...list[i], ...data };
+    localStorage.setItem(K_RESSOURCES, JSON.stringify(list));
+  }
 }
 export function removeRessource(id: string): void {
-  localStorage.setItem(K_RESSOURCES, JSON.stringify(loadRessources().filter(r => r.id !== id)));
+  localStorage.setItem(K_RESSOURCES, JSON.stringify(loadRessources().filter((r) => r.id !== id)));
 }
 
 export function loadAffectationsRessources(): AffectationRessource[] {
-  try { return JSON.parse(localStorage.getItem(K_AFF_RESSOURCES) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_AFF_RESSOURCES) ?? "[]");
+  } catch {
+    return [];
+  }
 }
-export function addAffectationRessource(data: Omit<AffectationRessource, "id">): AffectationRessource {
+export function addAffectationRessource(
+  data: Omit<AffectationRessource, "id">,
+): AffectationRessource {
   const a: AffectationRessource = { id: crypto.randomUUID(), ...data };
   const list = loadAffectationsRessources();
   list.push(a);
@@ -383,7 +442,10 @@ export function addAffectationRessource(data: Omit<AffectationRessource, "id">):
   return a;
 }
 export function removeAffectationRessource(id: string): void {
-  localStorage.setItem(K_AFF_RESSOURCES, JSON.stringify(loadAffectationsRessources().filter(a => a.id !== id)));
+  localStorage.setItem(
+    K_AFF_RESSOURCES,
+    JSON.stringify(loadAffectationsRessources().filter((a) => a.id !== id)),
+  );
 }
 
 // ── Planning : Tâches chantier ────────────────────────────────────────────────
@@ -400,8 +462,11 @@ export type TacheChantier = {
 const K_TACHES = "ea_taches_chantier";
 
 export function loadTaches(): TacheChantier[] {
-  try { return JSON.parse(localStorage.getItem(K_TACHES) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_TACHES) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 export function addTache(data: Omit<TacheChantier, "id">): TacheChantier {
   const t: TacheChantier = { id: crypto.randomUUID(), ...data };
@@ -412,11 +477,14 @@ export function addTache(data: Omit<TacheChantier, "id">): TacheChantier {
 }
 export function updateTache(id: string, data: Partial<Omit<TacheChantier, "id">>): void {
   const list = loadTaches();
-  const i = list.findIndex(t => t.id === id);
-  if (i !== -1) { list[i] = { ...list[i], ...data }; localStorage.setItem(K_TACHES, JSON.stringify(list)); }
+  const i = list.findIndex((t) => t.id === id);
+  if (i !== -1) {
+    list[i] = { ...list[i], ...data };
+    localStorage.setItem(K_TACHES, JSON.stringify(list));
+  }
 }
 export function removeTache(id: string): void {
-  localStorage.setItem(K_TACHES, JSON.stringify(loadTaches().filter(t => t.id !== id)));
+  localStorage.setItem(K_TACHES, JSON.stringify(loadTaches().filter((t) => t.id !== id)));
 }
 
 // ── Planning : Pointages ──────────────────────────────────────────────────────
@@ -434,8 +502,11 @@ export type Pointage = {
 const K_POINTAGES = "ea_pointages";
 
 export function loadPointages(): Pointage[] {
-  try { return JSON.parse(localStorage.getItem(K_POINTAGES) ?? "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(K_POINTAGES) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 export function addPointage(data: Omit<Pointage, "id">): Pointage {
   const p: Pointage = { id: crypto.randomUUID(), ...data };
@@ -446,11 +517,14 @@ export function addPointage(data: Omit<Pointage, "id">): Pointage {
 }
 export function updatePointage(id: string, data: Partial<Omit<Pointage, "id">>): void {
   const list = loadPointages();
-  const i = list.findIndex(p => p.id === id);
-  if (i !== -1) { list[i] = { ...list[i], ...data }; localStorage.setItem(K_POINTAGES, JSON.stringify(list)); }
+  const i = list.findIndex((p) => p.id === id);
+  if (i !== -1) {
+    list[i] = { ...list[i], ...data };
+    localStorage.setItem(K_POINTAGES, JSON.stringify(list));
+  }
 }
 export function removePointage(id: string): void {
-  localStorage.setItem(K_POINTAGES, JSON.stringify(loadPointages().filter(p => p.id !== id)));
+  localStorage.setItem(K_POINTAGES, JSON.stringify(loadPointages().filter((p) => p.id !== id)));
 }
 
 // ── Affaires CAPEB ────────────────────────────────────────────────────────────
@@ -464,6 +538,11 @@ export type AffaireCAPEB = {
   description: string;
   statut: "nouveau" | "vu";
   corpsMetierCible: string;
+  origine?: "depot_direct" | "capeb" | "veille_publique" | "partenaire" | "import_manuel";
+  sourceNom?: string;
+  sourceUrl?: string;
+  validation?: "a_valider" | "validee";
+  contactConsigne?: string;
 };
 
 const K_AFFAIRES_CAPEB = "ea_affaires_capeb";
@@ -475,9 +554,14 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     typesTravaux: "Plomberie",
     commune: "Pau",
     codePostal: "64000",
-    description: "Remplacement de la chaudière fioul par une pompe à chaleur. Maison individuelle de 120 m², construction 1975. Devis souhaité avant fin juin.",
+    description:
+      "Remplacement de la chaudière fioul par une pompe à chaleur. Maison individuelle de 120 m², construction 1975. Devis souhaité avant fin juin.",
     statut: "nouveau",
     corpsMetierCible: "Plomberie",
+    origine: "capeb",
+    sourceNom: "CAPEB Adour-Pyrénées",
+    validation: "validee",
+    contactConsigne: "Contact transmis par la CAPEB après validation de l'artisan intéressé.",
   },
   {
     id: "demo-affaire-2",
@@ -485,9 +569,16 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     typesTravaux: "Électricité",
     commune: "Tarbes",
     codePostal: "65000",
-    description: "Mise aux normes du tableau électrique et ajout de prises dans une maison de 1968. Travaux à réaliser cet été si possible.",
+    description:
+      "Mise aux normes du tableau électrique et ajout de prises dans une maison de 1968. Travaux à réaliser cet été si possible.",
     statut: "nouveau",
     corpsMetierCible: "Électricité",
+    origine: "veille_publique",
+    sourceNom: "Annonce publique locale",
+    sourceUrl: "https://www.leboncoin.fr/",
+    validation: "a_valider",
+    contactConsigne:
+      "Vérifier que l'annonce est toujours publique et contacter le particulier uniquement via la plateforme source.",
   },
   {
     id: "demo-affaire-3",
@@ -495,9 +586,16 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     typesTravaux: "Peinture",
     commune: "Bayonne",
     codePostal: "64100",
-    description: "Rénovation peinture d'un appartement T3 de 75 m² : murs et plafonds de toutes les pièces. Couleurs à définir ensemble.",
+    description:
+      "Rénovation peinture d'un appartement T3 de 75 m² : murs et plafonds de toutes les pièces. Couleurs à définir ensemble.",
     statut: "nouveau",
     corpsMetierCible: "Peinture",
+    origine: "import_manuel",
+    sourceNom: "Groupe local public",
+    sourceUrl: "https://www.facebook.com/",
+    validation: "a_valider",
+    contactConsigne:
+      "Demande importée manuellement depuis une publication visible publiquement. Ne pas republier de données personnelles.",
   },
 ];
 
@@ -507,12 +605,14 @@ export function getAffairesCAPEB(): AffaireCAPEB[] {
     if (stored) return JSON.parse(stored) as AffaireCAPEB[];
     localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(AFFAIRES_DEMO));
     return [...AFFAIRES_DEMO];
-  } catch { return [...AFFAIRES_DEMO]; }
+  } catch {
+    return [...AFFAIRES_DEMO];
+  }
 }
 
 export function saveAffaireCAPEB(affaire: AffaireCAPEB): void {
   const list = getAffairesCAPEB();
-  const i = list.findIndex(a => a.id === affaire.id);
+  const i = list.findIndex((a) => a.id === affaire.id);
   if (i !== -1) {
     list[i] = affaire;
   } else {
@@ -522,12 +622,15 @@ export function saveAffaireCAPEB(affaire: AffaireCAPEB): void {
 }
 
 export function deleteAffaireCAPEB(id: string): void {
-  localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(getAffairesCAPEB().filter(a => a.id !== id)));
+  localStorage.setItem(
+    K_AFFAIRES_CAPEB,
+    JSON.stringify(getAffairesCAPEB().filter((a) => a.id !== id)),
+  );
 }
 
 export function markAffaireVue(id: string): void {
   const list = getAffairesCAPEB();
-  const i = list.findIndex(a => a.id === id);
+  const i = list.findIndex((a) => a.id === id);
   if (i !== -1) {
     list[i].statut = "vu";
     localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(list));
