@@ -1,48 +1,114 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Mail, Plus, ChevronDown, ChevronUp,
-  Droplets, Zap, Building2, Paintbrush, Hammer, House, Grid3x3, Wrench, Trash2,
+  Mail,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Droplets,
+  Zap,
+  Building2,
+  Paintbrush,
+  Hammer,
+  House,
+  Grid3x3,
+  Wrench,
+  Trash2,
+  Search,
+  ExternalLink,
+  ShieldCheck,
+  ClipboardList,
+  Globe2,
+  Filter,
+  AlertTriangle,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import {
-  getAffairesCAPEB, saveAffaireCAPEB, deleteAffaireCAPEB, markAffaireVue,
-  notifyUpdate, DATA_EVENT,
+  getAffairesCAPEB,
+  saveAffaireCAPEB,
+  deleteAffaireCAPEB,
+  markAffaireVue,
+  notifyUpdate,
+  DATA_EVENT,
   type AffaireCAPEB,
 } from "@/lib/local-data";
 
 export const Route = createFileRoute("/_authenticated/affaires-capeb")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Affaires CAPEB" }] }),
+  head: () => ({ meta: [{ title: "Demandes particuliers – CAPEB" }] }),
   component: AffairesCAPEBPage,
 });
 
 const CARD_SHADOW = "0 1px 3px rgba(26,23,20,.06), 0 6px 16px rgba(26,23,20,.05)";
+const INPUT_CLS =
+  "w-full rounded-[10px] border border-[#ECE7E1] bg-[#FAF8F5] px-[12px] py-[10px] text-[13.5px] text-[#1A1714] placeholder:text-[#C4BDB5] focus:outline-none focus:border-[#E2001A] transition-colors";
+const LABEL_CLS =
+  "block text-[11.5px] font-semibold text-[#4A453F] mb-[6px] uppercase tracking-[.08em]";
 
 const TYPES_TRAVAUX = [
-  "Plomberie", "Électricité", "Maçonnerie", "Peinture",
-  "Menuiserie", "Couverture", "Carrelage", "Autre",
+  "Plomberie",
+  "Électricité",
+  "Maçonnerie",
+  "Peinture",
+  "Menuiserie",
+  "Couverture",
+  "Carrelage",
+  "Autre",
+] as const;
+
+const ORIGINES = [
+  { value: "depot_direct", label: "Dépôt direct" },
+  { value: "capeb", label: "CAPEB" },
+  { value: "veille_publique", label: "Veille publique" },
+  { value: "partenaire", label: "Partenaire" },
+  { value: "import_manuel", label: "Import manuel" },
 ] as const;
 
 function iconPourType(type: string) {
   switch (type) {
-    case "Plomberie":    return Droplets;
-    case "Électricité":  return Zap;
-    case "Maçonnerie":   return Building2;
-    case "Peinture":     return Paintbrush;
-    case "Menuiserie":   return Hammer;
-    case "Couverture":   return House;
-    case "Carrelage":    return Grid3x3;
-    default:             return Wrench;
+    case "Plomberie":
+      return Droplets;
+    case "Électricité":
+      return Zap;
+    case "Maçonnerie":
+      return Building2;
+    case "Peinture":
+      return Paintbrush;
+    case "Menuiserie":
+      return Hammer;
+    case "Couverture":
+      return House;
+    case "Carrelage":
+      return Grid3x3;
+    default:
+      return Wrench;
+  }
+}
+
+function labelOrigine(origine: AffaireCAPEB["origine"]) {
+  return ORIGINES.find((o) => o.value === origine)?.label ?? "Source non précisée";
+}
+
+function sourceAffaire(affaire: AffaireCAPEB) {
+  return affaire.sourceNom?.trim() || labelOrigine(affaire.origine);
+}
+
+function sourceUrlValide(value: string) {
+  if (!value.trim()) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
   }
 }
 
 // ── Page principale ───────────────────────────────────────────────────────────
 
 function AffairesCAPEBPage() {
-  const [onglet, setOnglet] = useState<"disponibles" | "ajouter">("disponibles");
+  const [onglet, setOnglet] = useState<"disponibles" | "ajouter" | "veille">("disponibles");
   const [affaires, setAffaires] = useState<AffaireCAPEB[]>([]);
 
   const recharger = () => setAffaires(getAffairesCAPEB());
@@ -53,17 +119,17 @@ function AffairesCAPEBPage() {
     return () => window.removeEventListener(DATA_EVENT, recharger);
   }, []);
 
-  const nbNouvelles = affaires.filter(a => a.statut === "nouveau").length;
+  const nbNouvelles = affaires.filter((a) => a.statut === "nouveau").length;
 
   return (
     <div className="space-y-5">
       {/* En-tête */}
       <div>
         <h1 className="font-display text-[30px] font-semibold text-[#1A1714] uppercase leading-none">
-          Affaires CAPEB
+          Demandes particuliers
         </h1>
         <p className="text-[#8B847D] text-sm mt-[7px]">
-          Demandes de particuliers transmises par votre CAPEB Adour-Pyrénées
+          Opportunités de particuliers à qualifier avant mise en relation avec un artisan
         </p>
       </div>
 
@@ -72,11 +138,13 @@ function AffairesCAPEBPage() {
         <button
           onClick={() => setOnglet("disponibles")}
           className="flex items-center gap-2 text-[13.5px] font-semibold pb-[10px] px-2 border-b-2 transition-colors"
-          style={onglet === "disponibles"
-            ? { borderColor: "#E2001A", color: "#E2001A" }
-            : { borderColor: "transparent", color: "#8B847D" }}
+          style={
+            onglet === "disponibles"
+              ? { borderColor: "#E2001A", color: "#E2001A" }
+              : { borderColor: "transparent", color: "#8B847D" }
+          }
         >
-          Affaires disponibles
+          Demandes disponibles
           {nbNouvelles > 0 && (
             <span
               className="text-[11px] font-bold rounded-full px-[7px] py-[2px] text-white"
@@ -89,47 +157,172 @@ function AffairesCAPEBPage() {
         <button
           onClick={() => setOnglet("ajouter")}
           className="text-[13.5px] font-semibold pb-[10px] px-2 border-b-2 transition-colors"
-          style={onglet === "ajouter"
-            ? { borderColor: "#E2001A", color: "#E2001A" }
-            : { borderColor: "transparent", color: "#8B847D" }}
+          style={
+            onglet === "ajouter"
+              ? { borderColor: "#E2001A", color: "#E2001A" }
+              : { borderColor: "transparent", color: "#8B847D" }
+          }
         >
-          Ajouter une affaire
+          Ajouter / importer
+        </button>
+        <button
+          onClick={() => setOnglet("veille")}
+          className="text-[13.5px] font-semibold pb-[10px] px-2 border-b-2 transition-colors"
+          style={
+            onglet === "veille"
+              ? { borderColor: "#E2001A", color: "#E2001A" }
+              : { borderColor: "transparent", color: "#8B847D" }
+          }
+        >
+          Sources & veille
         </button>
       </div>
 
-      {onglet === "disponibles" ? (
-        <VueDisponibles affaires={affaires} recharger={recharger} />
-      ) : (
-        <VueAjouter onSuccess={() => { recharger(); setOnglet("disponibles"); }} />
+      {onglet === "disponibles" && <VueDisponibles affaires={affaires} recharger={recharger} />}
+      {onglet === "ajouter" && (
+        <VueAjouter
+          onSuccess={() => {
+            recharger();
+            setOnglet("disponibles");
+          }}
+        />
       )}
+      {onglet === "veille" && <VueVeille />}
     </div>
   );
 }
 
 // ── Vue artisan — liste des affaires ─────────────────────────────────────────
 
-function VueDisponibles({ affaires, recharger }: { affaires: AffaireCAPEB[]; recharger: () => void }) {
+function VueDisponibles({
+  affaires,
+  recharger,
+}: {
+  affaires: AffaireCAPEB[];
+  recharger: () => void;
+}) {
+  const [recherche, setRecherche] = useState("");
+  const [filtreType, setFiltreType] = useState("Tous");
+  const [filtreSource, setFiltreSource] = useState("Toutes");
+
+  const sources = useMemo(
+    () => Array.from(new Set(affaires.map(sourceAffaire))).sort((a, b) => a.localeCompare(b, "fr")),
+    [affaires],
+  );
+
+  const affairesFiltrees = useMemo(() => {
+    const q = recherche.trim().toLowerCase();
+    return affaires.filter((affaire) => {
+      const source = sourceAffaire(affaire);
+      const matchType = filtreType === "Tous" || affaire.typesTravaux === filtreType;
+      const matchSource = filtreSource === "Toutes" || source === filtreSource;
+      const texte = [
+        affaire.typesTravaux,
+        affaire.commune,
+        affaire.codePostal,
+        affaire.description,
+        affaire.corpsMetierCible,
+        source,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return matchType && matchSource && (!q || texte.includes(q));
+    });
+  }, [affaires, filtreSource, filtreType, recherche]);
+
+  const nbNouvelles = affaires.filter((a) => a.statut === "nouveau").length;
+  const nbAValider = affaires.filter((a) => (a.validation ?? "validee") === "a_valider").length;
+
   return (
     <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard
+          label="Demandes recensées"
+          value={affaires.length}
+          detail="Toutes sources confondues"
+        />
+        <StatCard
+          label="Nouvelles"
+          value={nbNouvelles}
+          detail="Non ouvertes par l'artisan"
+          accent="#E2001A"
+        />
+        <StatCard
+          label="A qualifier"
+          value={nbAValider}
+          detail="Veille/imports à contrôler"
+          accent="#D98A00"
+        />
+      </div>
+
       {/* Bandeau contact */}
       <div
         className="bg-white rounded-[16px] border border-[#ECE7E1] p-[16px] flex flex-wrap items-center justify-between gap-3"
         style={{ boxShadow: CARD_SHADOW }}
       >
         <div>
-          <p className="text-[13.5px] font-semibold text-[#1A1714]">Intéressé par une affaire ?</p>
+          <p className="text-[13.5px] font-semibold text-[#1A1714]">Intéressé par une demande ?</p>
           <p className="text-[12.5px] text-[#8B847D] mt-[2px]">
-            Contactez votre chargé de développement : Guillaume PIGUÉ
+            La CAPEB qualifie les coordonnées avant toute mise en relation avec le particulier.
           </p>
         </div>
         <a
           href="mailto:guillaume.pigue@capeb-adour-pyrenees.fr"
           className="flex items-center gap-[6px] text-[12.5px] font-semibold text-white rounded-[9px] px-[14px] py-[10px] flex-shrink-0 transition-opacity hover:opacity-90"
-          style={{ background: "linear-gradient(180deg,#EA1227,#D2001A)", boxShadow: "0 3px 10px rgba(226,0,26,.3)" }}
+          style={{
+            background: "linear-gradient(180deg,#EA1227,#D2001A)",
+            boxShadow: "0 3px 10px rgba(226,0,26,.3)",
+          }}
         >
           <Mail className="h-3.5 w-3.5" />
-          Contacter
+          Contacter la CAPEB
         </a>
+      </div>
+
+      {/* Filtres */}
+      <div
+        className="bg-white rounded-[16px] border border-[#ECE7E1] p-[14px] grid gap-3 md:grid-cols-[1fr_180px_220px]"
+        style={{ boxShadow: CARD_SHADOW }}
+      >
+        <label className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B847D]" />
+          <input
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            placeholder="Rechercher une ville, un métier, une source..."
+            className={`${INPUT_CLS} pl-9`}
+          />
+        </label>
+        <label className="relative">
+          <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B847D]" />
+          <select
+            value={filtreType}
+            onChange={(e) => setFiltreType(e.target.value)}
+            className={`${INPUT_CLS} pl-9`}
+          >
+            <option value="Tous">Tous les métiers</option>
+            {TYPES_TRAVAUX.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="relative">
+          <Globe2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B847D]" />
+          <select
+            value={filtreSource}
+            onChange={(e) => setFiltreSource(e.target.value)}
+            className={`${INPUT_CLS} pl-9`}
+          >
+            <option value="Toutes">Toutes les sources</option>
+            {sources.map((source) => (
+              <option key={source} value={source}>
+                {source}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* Liste des affaires */}
@@ -138,15 +331,53 @@ function VueDisponibles({ affaires, recharger }: { affaires: AffaireCAPEB[]; rec
           className="bg-white rounded-[16px] border border-[#ECE7E1] py-12 text-center text-[#8B847D] text-sm"
           style={{ boxShadow: CARD_SHADOW }}
         >
-          Aucune affaire disponible pour le moment. Revenez bientôt.
+          Aucune demande disponible pour le moment. Ajoutez une demande ou configurez une veille
+          autorisée.
+        </div>
+      ) : affairesFiltrees.length === 0 ? (
+        <div
+          className="bg-white rounded-[16px] border border-[#ECE7E1] py-12 text-center text-[#8B847D] text-sm"
+          style={{ boxShadow: CARD_SHADOW }}
+        >
+          Aucune demande ne correspond aux filtres sélectionnés.
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {affaires.map(a => (
+          {affairesFiltrees.map((a) => (
             <CarteAffaire key={a.id} affaire={a} recharger={recharger} />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  detail,
+  accent = "#1A1714",
+}: {
+  label: string;
+  value: number;
+  detail: string;
+  accent?: string;
+}) {
+  return (
+    <div
+      className="bg-white rounded-[14px] border border-[#ECE7E1] p-[16px]"
+      style={{ boxShadow: CARD_SHADOW }}
+    >
+      <p className="text-[11.5px] font-semibold uppercase tracking-[.08em] text-[#8B847D]">
+        {label}
+      </p>
+      <p
+        className="font-display text-[30px] font-semibold leading-none mt-2"
+        style={{ color: accent }}
+      >
+        {value}
+      </p>
+      <p className="text-[12px] text-[#8B847D] mt-2">{detail}</p>
     </div>
   );
 }
@@ -158,12 +389,19 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
   const Icon = iconPourType(affaire.typesTravaux);
 
   const dateFormatee = (() => {
-    try { return `Ajouté le ${format(parseISO(affaire.dateAjout), "d MMMM yyyy", { locale: fr })}`; }
-    catch { return ""; }
+    try {
+      return `Ajouté le ${format(parseISO(affaire.dateAjout), "d MMMM yyyy", { locale: fr })}`;
+    } catch {
+      return "";
+    }
   })();
 
-  const sujet = encodeURIComponent(`Intérêt pour une affaire CAPEB — ${affaire.typesTravaux} ${affaire.commune}`);
+  const sujet = encodeURIComponent(
+    `Intérêt pour une demande particulier — ${affaire.typesTravaux} ${affaire.commune}`,
+  );
   const mailtoContacter = `mailto:frederic.laplace@capeb-adour-pyrenees.fr?subject=${sujet}`;
+  const source = sourceAffaire(affaire);
+  const validation = affaire.validation ?? "validee";
 
   function handleOuvrir() {
     if (!ouverte && affaire.statut === "nouveau") {
@@ -171,7 +409,7 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
       notifyUpdate();
       recharger();
     }
-    setOuverte(v => !v);
+    setOuverte((v) => !v);
   }
 
   function handleSupprimer(e: React.MouseEvent) {
@@ -179,7 +417,7 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
     deleteAffaireCAPEB(affaire.id);
     notifyUpdate();
     recharger();
-    toast.success("Affaire supprimée");
+    toast.success("Demande supprimée");
   }
 
   const estNouveau = affaire.statut === "nouveau";
@@ -224,46 +462,99 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
                   Vu
                 </span>
               )}
+              <span
+                className="text-[10.5px] font-semibold uppercase tracking-wide px-[8px] py-[2px] rounded-full"
+                style={
+                  validation === "a_valider"
+                    ? { background: "#FBF1DE", color: "#D98A00" }
+                    : { background: "#E7F4EC", color: "#1E8E55" }
+                }
+              >
+                {validation === "a_valider" ? "A qualifier" : "Qualifiée"}
+              </span>
             </div>
             <p className="text-[12px] text-[#8B847D] mt-[1px]">
-              {affaire.commune}{affaire.codePostal ? ` — ${affaire.codePostal}` : ""}
+              {affaire.commune}
+              {affaire.codePostal ? ` — ${affaire.codePostal}` : ""}
             </p>
           </div>
         </div>
 
         {/* Description */}
-        <p className={`text-[13px] text-[#4A453F] leading-relaxed ${ouverte ? "" : "line-clamp-2"}`}>
+        <p
+          className={`text-[13px] text-[#4A453F] leading-relaxed ${ouverte ? "" : "line-clamp-2"}`}
+        >
           {affaire.description}
         </p>
 
         {/* Date */}
         <p className="text-[11.5px] text-[#8B847D]">{dateFormatee}</p>
 
+        {/* Source */}
+        <div className="rounded-[10px] border border-[#ECE7E1] bg-[#FAF8F5] px-[11px] py-[9px]">
+          <p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[#8B847D]">
+            Source
+          </p>
+          <div className="mt-[3px] flex items-center gap-2">
+            <Globe2 className="h-3.5 w-3.5 text-[#4A453F]" />
+            <span className="text-[12.5px] font-semibold text-[#1A1714]">{source}</span>
+          </div>
+          {ouverte && affaire.contactConsigne && (
+            <p className="mt-[6px] text-[12px] leading-relaxed text-[#4A453F]">
+              {affaire.contactConsigne}
+            </p>
+          )}
+        </div>
+
         {/* Actions */}
         <div className="flex items-center gap-[8px] mt-auto pt-[2px]">
           <a
             href={mailtoContacter}
             onClick={() => {
-              if (estNouveau) { markAffaireVue(affaire.id); notifyUpdate(); recharger(); }
+              if (estNouveau) {
+                markAffaireVue(affaire.id);
+                notifyUpdate();
+                recharger();
+              }
             }}
             className="flex items-center gap-[6px] text-[12.5px] font-semibold text-white rounded-[9px] px-[13px] py-[9px] transition-opacity hover:opacity-90"
-            style={{ background: "linear-gradient(180deg,#EA1227,#D2001A)", boxShadow: "0 3px 10px rgba(226,0,26,.3)" }}
+            style={{
+              background: "linear-gradient(180deg,#EA1227,#D2001A)",
+              boxShadow: "0 3px 10px rgba(226,0,26,.3)",
+            }}
           >
             <Mail className="h-3.5 w-3.5" />
             Contacter la CAPEB
           </a>
+          {affaire.sourceUrl && (
+            <a
+              href={affaire.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-[5px] text-[12px] font-medium text-[#4A453F] rounded-[9px] px-[10px] py-[9px] border border-[#ECE7E1] hover:border-[#E2DCD4] transition-colors"
+              style={{ background: "#FAF8F5" }}
+              title="Ouvrir la source"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
           <button
             onClick={handleOuvrir}
             className="flex items-center gap-[5px] text-[12px] font-medium text-[#4A453F] rounded-[9px] px-[10px] py-[9px] border border-[#ECE7E1] hover:border-[#E2DCD4] transition-colors"
             style={{ background: "#FAF8F5" }}
           >
-            {ouverte ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {ouverte ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
           </button>
           <button
             onClick={handleSupprimer}
             className="ml-auto flex items-center justify-center rounded-[9px] p-[9px] border border-[#ECE7E1] hover:border-[#F6CFCB] hover:bg-[#FDECEA] transition-colors"
             style={{ background: "#FAF8F5" }}
-            title="Supprimer cette affaire"
+            title="Supprimer cette demande"
           >
             <Trash2 className="h-3.5 w-3.5 text-[#8B847D]" />
           </button>
@@ -275,24 +566,46 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
 
 // ── Vue admin — formulaire d'ajout ────────────────────────────────────────────
 
-const FORM_DEFAUT = {
+type FormAjout = {
+  typesTravaux: string;
+  commune: string;
+  codePostal: string;
+  description: string;
+  corpsMetierCible: string;
+  origine: NonNullable<AffaireCAPEB["origine"]>;
+  sourceNom: string;
+  sourceUrl: string;
+  validation: NonNullable<AffaireCAPEB["validation"]>;
+  contactConsigne: string;
+};
+
+const FORM_DEFAUT: FormAjout = {
   typesTravaux: "Plomberie",
   commune: "",
   codePostal: "",
   description: "",
   corpsMetierCible: "Tous",
+  origine: "depot_direct",
+  sourceNom: "",
+  sourceUrl: "",
+  validation: "validee",
+  contactConsigne: "Contact à transmettre après qualification par la CAPEB.",
 };
 
 function VueAjouter({ onSuccess }: { onSuccess: () => void }) {
-  const [form, setForm] = useState({ ...FORM_DEFAUT });
+  const [form, setForm] = useState<FormAjout>({ ...FORM_DEFAUT });
 
-  function set(field: keyof typeof FORM_DEFAUT, value: string) {
-    setForm(f => ({ ...f, [field]: value }));
+  function set(field: keyof FormAjout, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.commune.trim() || !form.description.trim()) return;
+    if (!sourceUrlValide(form.sourceUrl)) {
+      toast.error("Le lien source doit commencer par http:// ou https://");
+      return;
+    }
     const nouvelle: AffaireCAPEB = {
       id: crypto.randomUUID(),
       dateAjout: new Date().toISOString(),
@@ -302,102 +615,339 @@ function VueAjouter({ onSuccess }: { onSuccess: () => void }) {
       description: form.description.trim(),
       statut: "nouveau",
       corpsMetierCible: form.corpsMetierCible,
+      origine: form.origine,
+      sourceNom: form.sourceNom.trim() || labelOrigine(form.origine),
+      sourceUrl: form.sourceUrl.trim() || undefined,
+      validation: form.validation,
+      contactConsigne: form.contactConsigne.trim() || undefined,
     };
     saveAffaireCAPEB(nouvelle);
     notifyUpdate();
-    toast.success("Affaire publiée avec succès");
+    toast.success("Demande publiée avec succès");
     setForm({ ...FORM_DEFAUT });
     onSuccess();
   }
 
-  const inputCls = "w-full rounded-[10px] border border-[#ECE7E1] bg-[#FAF8F5] px-[12px] py-[10px] text-[13.5px] text-[#1A1714] placeholder:text-[#C4BDB5] focus:outline-none focus:border-[#E2001A] transition-colors";
-  const labelCls = "block text-[11.5px] font-semibold text-[#4A453F] mb-[6px] uppercase tracking-[.08em]";
-
   return (
-    <div className="max-w-xl">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,640px)_minmax(260px,1fr)]">
       <div
         className="bg-white rounded-[16px] border border-[#ECE7E1] p-[24px]"
         style={{ boxShadow: CARD_SHADOW }}
       >
         <h2 className="font-display text-[17px] font-semibold text-[#1A1714] uppercase mb-[20px]">
-          Nouvelle affaire
+          Nouvelle demande
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-[16px]">
           {/* Type de travaux */}
           <div>
-            <label className={labelCls}>Type de travaux</label>
+            <label className={LABEL_CLS}>Type de travaux</label>
             <select
               value={form.typesTravaux}
-              onChange={e => set("typesTravaux", e.target.value)}
-              className={inputCls}
+              onChange={(e) => set("typesTravaux", e.target.value)}
+              className={INPUT_CLS}
             >
-              {TYPES_TRAVAUX.map(t => <option key={t} value={t}>{t}</option>)}
+              {TYPES_TRAVAUX.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
             </select>
           </div>
 
           {/* Commune + Code postal */}
           <div className="grid grid-cols-2 gap-[12px]">
             <div>
-              <label className={labelCls}>Commune</label>
+              <label className={LABEL_CLS}>Commune</label>
               <input
                 type="text"
                 required
                 value={form.commune}
-                onChange={e => set("commune", e.target.value)}
+                onChange={(e) => set("commune", e.target.value)}
                 placeholder="ex : Pau"
-                className={inputCls}
+                className={INPUT_CLS}
               />
             </div>
             <div>
-              <label className={labelCls}>Code postal</label>
+              <label className={LABEL_CLS}>Code postal</label>
               <input
                 type="text"
                 value={form.codePostal}
-                onChange={e => set("codePostal", e.target.value)}
+                onChange={(e) => set("codePostal", e.target.value)}
                 placeholder="ex : 64000"
                 maxLength={5}
-                className={inputCls}
+                className={INPUT_CLS}
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className={labelCls}>Description de la demande</label>
+            <label className={LABEL_CLS}>Description de la demande</label>
             <textarea
               required
               value={form.description}
-              onChange={e => set("description", e.target.value)}
+              onChange={(e) => set("description", e.target.value)}
               placeholder="Décrivez la demande du particulier…"
               rows={4}
-              className={`${inputCls} resize-none`}
+              className={`${INPUT_CLS} resize-none`}
             />
           </div>
 
           {/* Corps de métier ciblé */}
           <div>
-            <label className={labelCls}>Corps de métier ciblé</label>
+            <label className={LABEL_CLS}>Corps de métier ciblé</label>
             <select
               value={form.corpsMetierCible}
-              onChange={e => set("corpsMetierCible", e.target.value)}
-              className={inputCls}
+              onChange={(e) => set("corpsMetierCible", e.target.value)}
+              className={INPUT_CLS}
             >
               <option value="Tous">Tous les corps de métier</option>
-              {TYPES_TRAVAUX.map(t => <option key={t} value={t}>{t}</option>)}
+              {TYPES_TRAVAUX.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
             </select>
+          </div>
+
+          <div className="grid gap-[12px] md:grid-cols-2">
+            <div>
+              <label className={LABEL_CLS}>Origine</label>
+              <select
+                value={form.origine}
+                onChange={(e) => set("origine", e.target.value)}
+                className={INPUT_CLS}
+              >
+                {ORIGINES.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={LABEL_CLS}>Statut de qualification</label>
+              <select
+                value={form.validation}
+                onChange={(e) => set("validation", e.target.value)}
+                className={INPUT_CLS}
+              >
+                <option value="validee">Qualifiée</option>
+                <option value="a_valider">A qualifier</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className={LABEL_CLS}>Nom de la source</label>
+            <input
+              type="text"
+              value={form.sourceNom}
+              onChange={(e) => set("sourceNom", e.target.value)}
+              placeholder="ex : Formulaire CAPEB, Leboncoin, groupe Facebook public..."
+              className={INPUT_CLS}
+            />
+          </div>
+
+          <div>
+            <label className={LABEL_CLS}>Lien source public ou autorisé</label>
+            <input
+              type="url"
+              value={form.sourceUrl}
+              onChange={(e) => set("sourceUrl", e.target.value)}
+              placeholder="https://..."
+              className={INPUT_CLS}
+            />
+            <p className="text-[11.5px] text-[#8B847D] mt-[6px]">
+              Conservez un lien plutôt que de recopier des coordonnées personnelles.
+            </p>
+          </div>
+
+          <div>
+            <label className={LABEL_CLS}>Consigne de contact</label>
+            <textarea
+              value={form.contactConsigne}
+              onChange={(e) => set("contactConsigne", e.target.value)}
+              rows={3}
+              className={`${INPUT_CLS} resize-none`}
+              placeholder="ex : contacter via la plateforme source, validation CAPEB nécessaire..."
+            />
           </div>
 
           {/* Bouton soumettre */}
           <button
             type="submit"
             className="w-full flex items-center justify-center gap-[8px] text-[13.5px] font-semibold text-white rounded-[10px] px-[16px] py-[12px] transition-opacity hover:opacity-90"
-            style={{ background: "linear-gradient(180deg,#EA1227,#D2001A)", boxShadow: "0 3px 10px rgba(226,0,26,.3)" }}
+            style={{
+              background: "linear-gradient(180deg,#EA1227,#D2001A)",
+              boxShadow: "0 3px 10px rgba(226,0,26,.3)",
+            }}
           >
             <Plus className="h-4 w-4" />
-            Publier l'affaire
+            Publier la demande
           </button>
         </form>
+      </div>
+
+      <div className="space-y-3">
+        <ConseilCard
+          icon={<ShieldCheck className="h-4 w-4" />}
+          titre="Qualification avant diffusion"
+          texte="Les imports issus de plateformes externes doivent rester en 'A qualifier' tant que l'annonce, le consentement ou le mode de contact n'ont pas été vérifiés."
+        />
+        <ConseilCard
+          icon={<AlertTriangle className="h-4 w-4" />}
+          titre="Pas d'aspiration massive"
+          texte="Pour Facebook, Leboncoin et assimilés, privilégiez les liens, les APIs/partenariats ou une validation manuelle des publications publiques."
+        />
+        <ConseilCard
+          icon={<ClipboardList className="h-4 w-4" />}
+          titre="Données minimales"
+          texte="La description doit résumer le besoin sans republier téléphone, email, nom complet ou capture d'écran du particulier."
+        />
+      </div>
+    </div>
+  );
+}
+
+function ConseilCard({
+  icon,
+  titre,
+  texte,
+}: {
+  icon: React.ReactNode;
+  titre: string;
+  texte: string;
+}) {
+  return (
+    <div
+      className="bg-white rounded-[14px] border border-[#ECE7E1] p-[16px]"
+      style={{ boxShadow: CARD_SHADOW }}
+    >
+      <div className="flex items-center gap-2 text-[#E2001A]">
+        {icon}
+        <p className="text-[13px] font-semibold text-[#1A1714]">{titre}</p>
+      </div>
+      <p className="text-[12.5px] text-[#4A453F] leading-relaxed mt-[8px]">{texte}</p>
+    </div>
+  );
+}
+
+function VueVeille() {
+  const sources = [
+    {
+      titre: "Formulaire direct dans l'app",
+      statut: "Recommandé",
+      description:
+        "Le particulier dépose sa demande directement, avec consentement explicite et données structurées.",
+    },
+    {
+      titre: "Partenaires locaux / collectivités",
+      statut: "Fiable",
+      description:
+        "Flux transmis par des partenaires, mairies, réseaux d'entraide ou permanences CAPEB.",
+    },
+    {
+      titre: "Leboncoin et plateformes d'annonces",
+      statut: "A encadrer",
+      description:
+        "Utiliser uniquement des liens publics, imports manuels ou APIs/accords autorisés. Ne pas scraper massivement.",
+    },
+    {
+      titre: "Facebook / groupes locaux",
+      statut: "Très encadré",
+      description:
+        "Ne pas collecter depuis des groupes privés. Importer seulement une publication publique ou autorisée, sans recopier les données personnelles.",
+    },
+  ];
+
+  const etapes = [
+    "Repérer une demande publique ou reçue via un canal autorisé.",
+    "Créer une fiche avec le besoin, la commune, le métier et un lien source.",
+    "Laisser le statut 'A qualifier' tant que la demande n'est pas vérifiée.",
+    "Qualifier la demande côté CAPEB avant de transmettre le contact à un artisan.",
+  ];
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
+      <div
+        className="bg-white rounded-[16px] border border-[#ECE7E1] p-[22px]"
+        style={{ boxShadow: CARD_SHADOW }}
+      >
+        <div className="flex items-start gap-3">
+          <div className="rounded-[12px] bg-[#FDECEA] p-2 text-[#E2001A]">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-display text-[18px] font-semibold text-[#1A1714] uppercase">
+              Cadre de veille conforme
+            </h2>
+            <p className="text-[13px] leading-relaxed text-[#4A453F] mt-2">
+              L'onglet peut centraliser beaucoup de demandes, mais l'alimentation doit respecter les
+              conditions des plateformes et la protection des données personnelles. Le produit
+              stocke donc une fiche qualifiée et un lien vers la source, plutôt qu'une copie
+              complète de l'annonce externe.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 mt-5">
+          {sources.map((source) => (
+            <div
+              key={source.titre}
+              className="rounded-[14px] border border-[#ECE7E1] bg-[#FAF8F5] p-[15px]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[13.5px] font-semibold text-[#1A1714]">{source.titre}</p>
+                <span
+                  className="rounded-full px-[8px] py-[2px] text-[10.5px] font-semibold uppercase tracking-wide"
+                  style={
+                    source.statut === "A encadrer" || source.statut === "Très encadré"
+                      ? { background: "#FBF1DE", color: "#D98A00" }
+                      : { background: "#E7F4EC", color: "#1E8E55" }
+                  }
+                >
+                  {source.statut}
+                </span>
+              </div>
+              <p className="text-[12.5px] leading-relaxed text-[#4A453F] mt-2">
+                {source.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div
+        className="bg-white rounded-[16px] border border-[#ECE7E1] p-[22px]"
+        style={{ boxShadow: CARD_SHADOW }}
+      >
+        <div className="flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-[#E2001A]" />
+          <h3 className="font-display text-[17px] font-semibold text-[#1A1714] uppercase">
+            Processus conseillé
+          </h3>
+        </div>
+        <ol className="mt-4 space-y-3">
+          {etapes.map((etape, index) => (
+            <li key={etape} className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FDECEA] text-[12px] font-bold text-[#E2001A]">
+                {index + 1}
+              </span>
+              <span className="text-[13px] leading-relaxed text-[#4A453F]">{etape}</span>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-5 rounded-[14px] border border-[#F6CFCB] bg-[#FDECEA] p-[14px]">
+          <p className="text-[12.5px] font-semibold text-[#E2001A]">Point important</p>
+          <p className="text-[12.5px] leading-relaxed text-[#4A453F] mt-1">
+            Pour automatiser davantage, il faudra privilégier des APIs officielles, des partenariats
+            ou un formulaire de dépôt propriétaire. Les connecteurs de scraping vers
+            Facebook/Leboncoin ne sont pas intégrés ici.
+          </p>
+        </div>
       </div>
     </div>
   );
