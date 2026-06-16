@@ -548,7 +548,7 @@ export type AffaireCAPEB = {
 
 const K_AFFAIRES_CAPEB = "ea_affaires_capeb";
 const K_AFFAIRES_CAPEB_SEED_VERSION = "ea_affaires_capeb_seed_version";
-const AFFAIRES_CAPEB_SEED_VERSION = "2026-06-16-veille-allovoisins-exact-url-workflow";
+const AFFAIRES_CAPEB_SEED_VERSION = "2026-06-16-veille-allovoisins-targeted-text-links";
 const AFFAIRES_CAPEB_SEED_REMOVED_IDS = new Set([
   "veille-allovoisins-mazeres-lezons-macon-demi-journees-20260616",
 ]);
@@ -620,8 +620,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Menuiserie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Rénovation Pau",
-    sourceUrl: "https://www.allovoisins.com/v/artisan-tout-corps-d-etat-renovation/pau",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/artisan-tout-corps-d-etat-renovation/pau#:~:text=Je%20suis%20entrain%20de%20r%C3%A9nover%20un%20appartement%20au%20centre%20ville%20de%20Pau",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -637,8 +638,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Maçonnerie Pau",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/r/0/133/33914/0/Mazeres-lezons/service/Maconnerie%20title=#:~:text=je%20cherche%20une%20personne%20qui%20fait%20de%20ravalement%20de%20facade",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -653,8 +655,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Crépi de mur Pau/Lons",
-    sourceUrl: "https://www.allovoisins.com/v/si/crepi-de-mur/pau",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/si/crepi-de-mur/pau#:~:text=je%20cherche%20quelqu'un%20pour%20me%20faire%20un%20cr%C3%A9pi%20sur%20un%20mur",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -670,8 +673,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Dalle béton",
-    sourceUrl: "https://www.allovoisins.com/v/si/realisation-de-dalle-en-beton",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/maconnerie/pau#:~:text=construire%20une%20dalle%20en%20b%C3%A9ton%20de%209m2%20pour%20un%20abri%20de%20jardin",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -687,8 +691,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Terrassement Gelos",
-    sourceUrl: "https://www.allovoisins.com/v/terrassement-assainissement/gelos",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/maconnerie/pau#:~:text=j'ai%20besoin%20de%20faire%20une%20terrasse%20d'environ%2020m2",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -704,8 +709,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Électricité",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Bricolage Tarbes",
-    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes#:~:text=le%20tableau%20%C3%A9lectrique%20est%20%C3%A0%20refaire%20et%20des%20prises%20sont%20%C3%A0%20ajouter",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -721,8 +727,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Menuiserie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Brise-vue Juillan",
-    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/azereix",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/bricolage-petits-travaux/azereix#:~:text=je%20cherche%20quelqu%20un%20de%20minutieux%20pour%20m%20installer%20un%20brise%20vue",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -738,8 +745,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Électricité",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Tringles et luminaire Bazet",
-    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/salles-adour",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/bricolage-petits-travaux/salles-adour#:~:text=j%20ai%20besoin%20d%20une%20personne%20pour%20placer%20des%20tringles%20%C3%A0%20rideaux",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -755,8 +763,9 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Maçonnerie Bordères-sur-l'Échez",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/borderes-sur-lechez",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/v/maconnerie/borderes-sur-lechez#:~:text=je%20voudrais%20creer%20une%20dalle%20beton%20de%2015%20m2",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -772,8 +781,99 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
     sourceNom: "AlloVoisins - Maçonnerie Barbazan-Debat",
-    sourceUrl: "https://www.allovoisins.com/r/0/133/34931/0/Barbazan-debat/service/Maconnerie",
-    sourceUrlType: "page_recherche",
+    sourceUrl:
+      "https://www.allovoisins.com/r/0/133/34931/0/Barbazan-debat/service/Maconnerie#:~:text=je%20cherche%20ma%C3%A7on%20qualifi%C3%A9%20pour%20ouverture%20de%20fen%C3%AAtre",
+    sourceUrlType: "annonce_exacte",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-lescar-plan-travail-cuisine-20260616",
+    dateAjout: "2026-06-16T20:25:00.000Z",
+    typesTravaux: "Menuiserie",
+    commune: "Lescar",
+    codePostal: "64230",
+    description:
+      "Veille publique : rénovation d'un plan de travail de cuisine, surface d'environ 3 m2 en L, matériau envisagé type Dekton.",
+    statut: "nouveau",
+    corpsMetierCible: "Menuiserie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Bricolage Pau/Lescar",
+    sourceUrl:
+      "https://www.allovoisins.com/r/0/123/33909/0/Pau/service/Bricolage-travaux#:~:text=je%20cherche%20quelqu'un%20pour%20une%20r%C3%A9novation%20de%20plan%20de%20travail",
+    sourceUrlType: "annonce_exacte",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-serres-castet-garage-20m2-20260616",
+    dateAjout: "2026-06-16T20:25:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Serres-Castet",
+    codePostal: "64121",
+    description:
+      "Veille publique datée du 9 juin : recherche d'une personne pouvant réaliser un garage d'environ 20 m2.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maître d'oeuvre Pau",
+    sourceUrl:
+      "https://www.allovoisins.com/r/0/297/33909/0/Pau/service/Architecte-maitre-d-oeuvre#:~:text=je%20suis%20%C3%A0%20la%20recherche%20d'une%20personne%20pouvant%20me%20faire%20un%20garage%2020m2",
+    sourceUrlType: "annonce_exacte",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-tarbes-luminaire-lino-prise-20260616",
+    dateAjout: "2026-06-16T20:25:00.000Z",
+    typesTravaux: "Électricité",
+    commune: "Tarbes",
+    codePostal: "65000",
+    description:
+      "Veille publique : pose d'un luminaire, pose de lino et tentative d'installation d'une prise supplémentaire.",
+    statut: "nouveau",
+    corpsMetierCible: "Électricité",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Bricolage Tarbes",
+    sourceUrl:
+      "https://www.allovoisins.com/r/0/123/34474/0/Tarbes/service/Bricolage-travaux#:~:text=je%20cherche%20une%20personne%20pour%20poser%20un%20luminaire%20ainsi%20que%20poser%20du%20lino",
+    sourceUrlType: "annonce_exacte",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-tarbes-plaque-induction-20260616",
+    dateAjout: "2026-06-16T20:25:00.000Z",
+    typesTravaux: "Électricité",
+    commune: "Tarbes",
+    codePostal: "65000",
+    description:
+      "Veille publique urgente : recherche d'un électricien pour brancher une plaque de cuisson induction.",
+    statut: "nouveau",
+    corpsMetierCible: "Électricité",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Bricolage Lourdes/Tarbes",
+    sourceUrl:
+      "https://www.allovoisins.com/r/0/123/34497/0/Lourdes/service/Bricolage-travaux#:~:text=je%20recherche%20en%20urgence%20un%20%C3%A9lectricien%20pour%20brancher%20une%20plaque%20de%20cuisson",
+    sourceUrlType: "annonce_exacte",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-needhelp-pau-tringles-suspensions-20260616",
+    dateAjout: "2026-06-16T20:25:00.000Z",
+    typesTravaux: "Électricité",
+    commune: "Pau / Aureilhan",
+    codePostal: "64000",
+    description:
+      "Veille publique NeedHelp : fixer 4 tringles à rideaux, poser 5 suspensions au plafond et installer une machine à laver.",
+    statut: "nouveau",
+    corpsMetierCible: "Électricité",
+    origine: "veille_publique",
+    sourceNom: "NeedHelp - Pose de tringles Pau",
+    sourceUrl:
+      "https://www.needhelp.com/content/prestation/curtain-rod/pau-64000#:~:text=Fixer%204%20tringles%20%C3%A0%20rideaux%20-%20Poser%205%20suspensions",
+    sourceUrlType: "annonce_exacte",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
