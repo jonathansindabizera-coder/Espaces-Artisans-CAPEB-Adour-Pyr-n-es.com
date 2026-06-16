@@ -546,6 +546,11 @@ export type AffaireCAPEB = {
 };
 
 const K_AFFAIRES_CAPEB = "ea_affaires_capeb";
+const K_AFFAIRES_CAPEB_SEED_VERSION = "ea_affaires_capeb_seed_version";
+const AFFAIRES_CAPEB_SEED_VERSION = "2026-06-16-veille-allovoisins";
+
+const CONSIGNE_VEILLE_PUBLIQUE =
+  "Vérifier que la demande est toujours active et contacter uniquement via la plateforme source. Ne pas recopier de coordonnées personnelles.";
 
 const AFFAIRES_DEMO: AffaireCAPEB[] = [
   {
@@ -597,13 +602,203 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     contactConsigne:
       "Demande importée manuellement depuis une publication visible publiquement. Ne pas republier de données personnelles.",
   },
+  {
+    id: "veille-allovoisins-pau-renovation-cuisine-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Menuiserie",
+    commune: "Pau",
+    codePostal: "64000",
+    description:
+      "Veille publique : rénovation d'un appartement au centre-ville de Pau. Besoin d'aide pour terminer la pose d'une cuisine et réaliser quelques finitions.",
+    statut: "nouveau",
+    corpsMetierCible: "Menuiserie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Rénovation Pau",
+    sourceUrl: "https://www.allovoisins.com/v/artisan-tout-corps-d-etat-renovation/pau",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-billere-ravalement-facade-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Billère",
+    codePostal: "64140",
+    description:
+      "Veille publique : recherche d'une personne pour un ravalement de façade avec une partie en pierre apparente.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maçonnerie Pau",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-lons-crepi-mur-terrasse-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Lons",
+    codePostal: "64140",
+    description: "Veille publique : réalisation d'un crépi sur un long mur devant une terrasse.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maçonnerie Pau",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-mazeres-lezons-macon-demi-journees-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Mazères-Lezons",
+    codePostal: "64110",
+    description:
+      "Veille publique urgente : recherche d'un maçon pour deux demi-journées de travail. Matériel annoncé comme déjà disponible.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maçonnerie Pau",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-lons-dalle-beton-abri-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Lons",
+    codePostal: "64140",
+    description:
+      "Veille publique : construction d'une dalle béton d'environ 9 m2 pour un abri de jardin.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maçonnerie Pau",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-gelos-terrasse-trottoirs-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Gelos",
+    codePostal: "64110",
+    description:
+      "Veille publique : création d'une terrasse d'environ 20 m2 avec continuité de deux trottoirs d'environ 1 mètre.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maçonnerie Pau",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-tarbes-tableau-electrique-appartement-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Électricité",
+    commune: "Tarbes",
+    codePostal: "65000",
+    description:
+      "Veille publique : appartement de 67 m2 avec tableau électrique à refaire, prises apparentes à ajouter avec goulottes et possible sèche-serviette.",
+    statut: "nouveau",
+    corpsMetierCible: "Électricité",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Bricolage Tarbes",
+    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-juillan-brise-vue-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Menuiserie",
+    commune: "Juillan",
+    codePostal: "65290",
+    description:
+      "Veille publique : installation d'un brise-vue d'environ 20 m en haie artificielle.",
+    statut: "nouveau",
+    corpsMetierCible: "Menuiserie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Bricolage Tarbes",
+    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-soues-bazet-tringles-luminaire-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Électricité",
+    commune: "Soues / Bazet",
+    codePostal: "65430",
+    description:
+      "Veille publique : pose de tringles à rideaux et d'un luminaire, intervention estimée à environ trois heures.",
+    statut: "nouveau",
+    corpsMetierCible: "Électricité",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Bricolage Tarbes",
+    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-borderes-dalle-beton-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Bordères-sur-l'Échez",
+    codePostal: "65320",
+    description:
+      "Veille publique : création d'une dalle béton d'environ 15 m2 et 15 à 20 cm d'épaisseur pour un abri de jardin.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maçonnerie Tarbes",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/tarbes",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
+  {
+    id: "veille-allovoisins-barbazan-debat-ouverture-fenetre-20260616",
+    dateAjout: "2026-06-16T14:20:00.000Z",
+    typesTravaux: "Maçonnerie",
+    commune: "Barbazan-Debat",
+    codePostal: "65690",
+    description:
+      "Veille publique : ouverture de fenêtre sur mur de façade en rez-de-chaussée avec pose de linteau et appui de fenêtre.",
+    statut: "nouveau",
+    corpsMetierCible: "Maçonnerie",
+    origine: "veille_publique",
+    sourceNom: "AlloVoisins - Maçonnerie Tarbes",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/tarbes",
+    validation: "a_valider",
+    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
+  },
 ];
 
 export function getAffairesCAPEB(): AffaireCAPEB[] {
   try {
     const stored = localStorage.getItem(K_AFFAIRES_CAPEB);
-    if (stored) return JSON.parse(stored) as AffaireCAPEB[];
+    if (stored) {
+      const list = JSON.parse(stored) as AffaireCAPEB[];
+      if (localStorage.getItem(K_AFFAIRES_CAPEB_SEED_VERSION) !== AFFAIRES_CAPEB_SEED_VERSION) {
+        const ids = new Set(list.map((a) => a.id));
+        const nouvelles = AFFAIRES_DEMO.filter((a) => !ids.has(a.id));
+        if (nouvelles.length > 0) {
+          const merged = [...nouvelles, ...list];
+          localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(merged));
+          localStorage.setItem(K_AFFAIRES_CAPEB_SEED_VERSION, AFFAIRES_CAPEB_SEED_VERSION);
+          return merged;
+        }
+        localStorage.setItem(K_AFFAIRES_CAPEB_SEED_VERSION, AFFAIRES_CAPEB_SEED_VERSION);
+      }
+      return list;
+    }
     localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(AFFAIRES_DEMO));
+    localStorage.setItem(K_AFFAIRES_CAPEB_SEED_VERSION, AFFAIRES_CAPEB_SEED_VERSION);
     return [...AFFAIRES_DEMO];
   } catch {
     return [...AFFAIRES_DEMO];
