@@ -21,6 +21,7 @@ import {
   Globe2,
   Filter,
   AlertTriangle,
+  MapPin,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -103,6 +104,12 @@ function sourceUrlValide(value: string) {
   } catch {
     return false;
   }
+}
+
+function departementAffaire(affaire: AffaireCAPEB) {
+  if (affaire.codePostal.startsWith("64")) return "64";
+  if (affaire.codePostal.startsWith("65")) return "65";
+  return "autre";
 }
 
 // ── Page principale ───────────────────────────────────────────────────────────
@@ -202,6 +209,7 @@ function VueDisponibles({
   recharger: () => void;
 }) {
   const [recherche, setRecherche] = useState("");
+  const [filtreDepartement, setFiltreDepartement] = useState<"Tous" | "64" | "65">("Tous");
   const [filtreType, setFiltreType] = useState("Tous");
   const [filtreSource, setFiltreSource] = useState("Toutes");
 
@@ -214,6 +222,8 @@ function VueDisponibles({
     const q = recherche.trim().toLowerCase();
     return affaires.filter((affaire) => {
       const source = sourceAffaire(affaire);
+      const matchDepartement =
+        filtreDepartement === "Tous" || departementAffaire(affaire) === filtreDepartement;
       const matchType = filtreType === "Tous" || affaire.typesTravaux === filtreType;
       const matchSource = filtreSource === "Toutes" || source === filtreSource;
       const texte = [
@@ -226,12 +236,14 @@ function VueDisponibles({
       ]
         .join(" ")
         .toLowerCase();
-      return matchType && matchSource && (!q || texte.includes(q));
+      return matchDepartement && matchType && matchSource && (!q || texte.includes(q));
     });
-  }, [affaires, filtreSource, filtreType, recherche]);
+  }, [affaires, filtreDepartement, filtreSource, filtreType, recherche]);
 
   const nbNouvelles = affaires.filter((a) => a.statut === "nouveau").length;
   const nbAValider = affaires.filter((a) => (a.validation ?? "validee") === "a_valider").length;
+  const nb64 = affaires.filter((a) => departementAffaire(a) === "64").length;
+  const nb65 = affaires.filter((a) => departementAffaire(a) === "65").length;
 
   return (
     <div className="space-y-4">
@@ -277,6 +289,40 @@ function VueDisponibles({
           <Mail className="h-3.5 w-3.5" />
           Contacter la CAPEB
         </a>
+      </div>
+
+      {/* Filtre département */}
+      <div
+        className="bg-white rounded-[16px] border border-[#ECE7E1] p-[14px] flex flex-wrap items-center gap-2"
+        style={{ boxShadow: CARD_SHADOW }}
+      >
+        <div className="flex items-center gap-2 mr-1 text-[12.5px] font-semibold text-[#4A453F]">
+          <MapPin className="h-4 w-4 text-[#E2001A]" />
+          Département
+        </div>
+        {[
+          { value: "Tous", label: "Tous", count: affaires.length },
+          { value: "64", label: "64", count: nb64 },
+          { value: "65", label: "65", count: nb65 },
+        ].map((departement) => {
+          const active = filtreDepartement === departement.value;
+          return (
+            <button
+              key={departement.value}
+              type="button"
+              onClick={() => setFiltreDepartement(departement.value as "Tous" | "64" | "65")}
+              className="rounded-full px-[13px] py-[7px] text-[12.5px] font-semibold transition-colors"
+              style={
+                active
+                  ? { background: "#E2001A", color: "white" }
+                  : { background: "#FAF8F5", color: "#4A453F", border: "1px solid #ECE7E1" }
+              }
+            >
+              {departement.label}
+              <span className="ml-1 opacity-80">({departement.count})</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filtres */}
@@ -534,9 +580,10 @@ function CarteAffaire({ affaire, recharger }: { affaire: AffaireCAPEB; recharger
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-[5px] text-[12px] font-medium text-[#4A453F] rounded-[9px] px-[10px] py-[9px] border border-[#ECE7E1] hover:border-[#E2DCD4] transition-colors"
               style={{ background: "#FAF8F5" }}
-              title="Ouvrir la source"
+              title="Voir l'annonce source"
             >
               <ExternalLink className="h-3.5 w-3.5" />
+              Voir annonce
             </a>
           )}
           <button

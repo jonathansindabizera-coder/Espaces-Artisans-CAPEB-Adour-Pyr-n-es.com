@@ -547,7 +547,10 @@ export type AffaireCAPEB = {
 
 const K_AFFAIRES_CAPEB = "ea_affaires_capeb";
 const K_AFFAIRES_CAPEB_SEED_VERSION = "ea_affaires_capeb_seed_version";
-const AFFAIRES_CAPEB_SEED_VERSION = "2026-06-16-veille-allovoisins";
+const AFFAIRES_CAPEB_SEED_VERSION = "2026-06-16-veille-allovoisins-dept-links";
+const AFFAIRES_CAPEB_SEED_REMOVED_IDS = new Set([
+  "veille-allovoisins-mazeres-lezons-macon-demi-journees-20260616",
+]);
 
 const CONSIGNE_VEILLE_PUBLIQUE =
   "Vérifier que la demande est toujours active et contacter uniquement via la plateforme source. Ne pas recopier de coordonnées personnelles.";
@@ -644,24 +647,8 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     statut: "nouveau",
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
-    sourceNom: "AlloVoisins - Maçonnerie Pau",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
-    validation: "a_valider",
-    contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
-  },
-  {
-    id: "veille-allovoisins-mazeres-lezons-macon-demi-journees-20260616",
-    dateAjout: "2026-06-16T14:20:00.000Z",
-    typesTravaux: "Maçonnerie",
-    commune: "Mazères-Lezons",
-    codePostal: "64110",
-    description:
-      "Veille publique urgente : recherche d'un maçon pour deux demi-journées de travail. Matériel annoncé comme déjà disponible.",
-    statut: "nouveau",
-    corpsMetierCible: "Maçonnerie",
-    origine: "veille_publique",
-    sourceNom: "AlloVoisins - Maçonnerie Pau",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    sourceNom: "AlloVoisins - Crépi de mur Pau/Lons",
+    sourceUrl: "https://www.allovoisins.com/v/si/crepi-de-mur/pau",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -676,8 +663,8 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     statut: "nouveau",
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
-    sourceNom: "AlloVoisins - Maçonnerie Pau",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    sourceNom: "AlloVoisins - Dalle béton",
+    sourceUrl: "https://www.allovoisins.com/v/si/realisation-de-dalle-en-beton",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -692,8 +679,8 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     statut: "nouveau",
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
-    sourceNom: "AlloVoisins - Maçonnerie Pau",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/pau",
+    sourceNom: "AlloVoisins - Terrassement Gelos",
+    sourceUrl: "https://www.allovoisins.com/v/terrassement-assainissement/gelos",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -724,8 +711,8 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     statut: "nouveau",
     corpsMetierCible: "Menuiserie",
     origine: "veille_publique",
-    sourceNom: "AlloVoisins - Bricolage Tarbes",
-    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes",
+    sourceNom: "AlloVoisins - Brise-vue Juillan",
+    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/azereix",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -740,8 +727,8 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     statut: "nouveau",
     corpsMetierCible: "Électricité",
     origine: "veille_publique",
-    sourceNom: "AlloVoisins - Bricolage Tarbes",
-    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/tarbes",
+    sourceNom: "AlloVoisins - Tringles et luminaire Bazet",
+    sourceUrl: "https://www.allovoisins.com/v/bricolage-petits-travaux/salles-adour",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -756,8 +743,8 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     statut: "nouveau",
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
-    sourceNom: "AlloVoisins - Maçonnerie Tarbes",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/tarbes",
+    sourceNom: "AlloVoisins - Maçonnerie Bordères-sur-l'Échez",
+    sourceUrl: "https://www.allovoisins.com/v/maconnerie/borderes-sur-lechez",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
@@ -772,28 +759,51 @@ const AFFAIRES_DEMO: AffaireCAPEB[] = [
     statut: "nouveau",
     corpsMetierCible: "Maçonnerie",
     origine: "veille_publique",
-    sourceNom: "AlloVoisins - Maçonnerie Tarbes",
-    sourceUrl: "https://www.allovoisins.com/v/maconnerie/tarbes",
+    sourceNom: "AlloVoisins - Maçonnerie Barbazan-Debat",
+    sourceUrl: "https://www.allovoisins.com/r/0/133/34931/0/Barbazan-debat/service/Maconnerie",
     validation: "a_valider",
     contactConsigne: CONSIGNE_VEILLE_PUBLIQUE,
   },
 ];
 
+function synchroniserAffairesCAPEBSeed(
+  list: AffaireCAPEB[],
+  storedSeedVersion: string | null,
+): AffaireCAPEB[] {
+  const seedById = new Map(AFFAIRES_DEMO.map((affaire) => [affaire.id, affaire]));
+  const shouldAddMissingSeeds = !storedSeedVersion;
+
+  const updated = list
+    .filter((affaire) => !AFFAIRES_CAPEB_SEED_REMOVED_IDS.has(affaire.id))
+    .map((affaire) => {
+      const seed = seedById.get(affaire.id);
+      if (!seed) return affaire;
+
+      return {
+        ...seed,
+        statut: affaire.statut,
+        validation: affaire.validation ?? seed.validation,
+      };
+    });
+
+  if (!shouldAddMissingSeeds) return updated;
+
+  const ids = new Set(updated.map((affaire) => affaire.id));
+  const nouvelles = AFFAIRES_DEMO.filter((affaire) => !ids.has(affaire.id));
+  return [...nouvelles, ...updated];
+}
+
 export function getAffairesCAPEB(): AffaireCAPEB[] {
   try {
     const stored = localStorage.getItem(K_AFFAIRES_CAPEB);
     if (stored) {
+      const storedSeedVersion = localStorage.getItem(K_AFFAIRES_CAPEB_SEED_VERSION);
       const list = JSON.parse(stored) as AffaireCAPEB[];
-      if (localStorage.getItem(K_AFFAIRES_CAPEB_SEED_VERSION) !== AFFAIRES_CAPEB_SEED_VERSION) {
-        const ids = new Set(list.map((a) => a.id));
-        const nouvelles = AFFAIRES_DEMO.filter((a) => !ids.has(a.id));
-        if (nouvelles.length > 0) {
-          const merged = [...nouvelles, ...list];
-          localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(merged));
-          localStorage.setItem(K_AFFAIRES_CAPEB_SEED_VERSION, AFFAIRES_CAPEB_SEED_VERSION);
-          return merged;
-        }
+      if (storedSeedVersion !== AFFAIRES_CAPEB_SEED_VERSION) {
+        const merged = synchroniserAffairesCAPEBSeed(list, storedSeedVersion);
+        localStorage.setItem(K_AFFAIRES_CAPEB, JSON.stringify(merged));
         localStorage.setItem(K_AFFAIRES_CAPEB_SEED_VERSION, AFFAIRES_CAPEB_SEED_VERSION);
+        return merged;
       }
       return list;
     }
