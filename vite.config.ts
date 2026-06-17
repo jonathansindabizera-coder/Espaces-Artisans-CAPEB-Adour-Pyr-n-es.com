@@ -13,4 +13,12 @@ export default defineConfig({
   nitro: {
     preset: "vercel",
   },
+  // Newer @lovable.dev/vite-tanstack-config releases force Lightning CSS as the
+  // dev CSS transformer, which rejects the Google Fonts `@import` in
+  // src/styles.css (it lands after the inlined Tailwind imports). Use PostCSS —
+  // the transformer the repo's pinned lockfile used in dev — so the dev server
+  // serves styles.css instead of returning a 500.
+  vite: {
+    css: { transformer: "postcss" },
+  },
 });
