@@ -22,6 +22,8 @@ import {
   Filter,
   AlertTriangle,
   MapPin,
+  Download,
+  X,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -35,6 +37,7 @@ import {
   DATA_EVENT,
   type AffaireCAPEB,
 } from "@/lib/local-data";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/affaires-capeb")({
   ssr: false,
@@ -66,6 +69,30 @@ const ORIGINES = [
   { value: "partenaire", label: "Partenaire" },
   { value: "import_manuel", label: "Import manuel" },
 ] as const;
+
+type AnnonceParticulier = {
+  id: string;
+  source: string;
+  external_id: string;
+  titre: string;
+  description: string | null;
+  ville: string | null;
+  code_postal: string | null;
+  departement: string | null;
+  corps_metier: string;
+  date_annonce: string | null;
+  date_scraping: string;
+  url_annonce: string;
+  url_type: string;
+  statut_import: string;
+  created_at: string;
+};
+
+function sourceLabel(source: string): string {
+  if (source === "allovoisins") return "AlloVoisins";
+  if (source === "appeloffreduparticulier") return "Appel Offre Particulier";
+  return source;
+}
 
 function iconPourType(type: string) {
   switch (type) {
@@ -121,16 +148,31 @@ function typeLienSource(affaire: AffaireCAPEB): NonNullable<AffaireCAPEB["source
 function AffairesCAPEBPage() {
   const [onglet, setOnglet] = useState<"disponibles" | "ajouter" | "veille">("disponibles");
   const [affaires, setAffaires] = useState<AffaireCAPEB[]>([]);
+  const [annoncesVeille, setAnnoncesVeille] = useState<AnnonceParticulier[]>([]);
 
   const recharger = () => setAffaires(getAffairesCAPEB());
 
+  async function chargerVeille() {
+    try {
+      const { data } = await supabase
+        .from("annonces_particuliers")
+        .select("*")
+        .eq("statut_import", "nouveau")
+        .order("date_scraping", { ascending: false })
+        .limit(50);
+      setAnnoncesVeille((data as AnnonceParticulier[]) ?? []);
+    } catch { /* Supabase indisponible — on affiche les affaires locales uniquement */ }
+  }
+
   useEffect(() => {
     recharger();
+    chargerVeille();
     window.addEventListener(DATA_EVENT, recharger);
     return () => window.removeEventListener(DATA_EVENT, recharger);
   }, []);
 
   const nbNouvelles = affaires.filter((a) => a.statut === "nouveau").length;
+  const nbVeille = annoncesVeille.length;
 
   return (
     <div className="space-y-5">
@@ -178,7 +220,7 @@ function AffairesCAPEBPage() {
         </button>
         <button
           onClick={() => setOnglet("veille")}
-          className="text-[13.5px] font-semibold pb-[10px] px-2 border-b-2 transition-colors"
+          className="flex items-center gap-2 text-[13.5px] font-semibold pb-[10px] px-2 border-b-2 transition-colors"
           style={
             onglet === "veille"
               ? { borderColor: "#E2001A", color: "#E2001A" }
@@ -186,6 +228,14 @@ function AffairesCAPEBPage() {
           }
         >
           Sources & veille
+          {nbVeille > 0 && (
+            <span
+              className="text-[11px] font-bold rounded-full px-[7px] py-[2px] text-white"
+              style={{ background: "#E65100" }}
+            >
+              {nbVeille}
+            </span>
+          )}
         </button>
       </div>
 
@@ -198,7 +248,13 @@ function AffairesCAPEBPage() {
           }}
         />
       )}
-      {onglet === "veille" && <VueVeille />}
+      {onglet === "veille" && (
+        <VueVeille
+          annoncesVeille={annoncesVeille}
+          recharger={recharger}
+          rechargerVeille={chargerVeille}
+        />
+      )}
     </div>
   );
 }
@@ -977,7 +1033,15 @@ function ConseilCard({
   );
 }
 
-function VueVeille() {
+function VueVeille({
+  annoncesVeille,
+  recharger,
+  rechargerVeille,
+}: {
+  annoncesVeille: AnnonceParticulier[];
+  recharger: () => void;
+  rechargerVeille: () => void;
+}) {
   const sources = [
     {
       titre: "Formulaire direct dans l'app",
@@ -1013,7 +1077,42 @@ function VueVeille() {
   ];
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
+    <div className="space-y-5">
+      {/* Section annonces scrapées automatiquement */}
+      {annoncesVeille.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[11px] font-bold uppercase tracking-[.08em] px-[8px] py-[3px] rounded-full"
+              style={{ background: "#FFF3E0", color: "#E65100" }}
+            >
+              Veille automatique
+            </span>
+            <span className="text-[12px] text-[#8B847D]">
+              {annoncesVeille.length} annonce{annoncesVeille.length > 1 ? "s" : ""} trouvée{annoncesVeille.length > 1 ? "s" : ""} en ligne
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {annoncesVeille.map((a) => (
+              <CarteAnnonceVeille
+                key={a.id}
+                annonce={a}
+                recharger={recharger}
+                rechargerVeille={rechargerVeille}
+              />
+            ))}
+          </div>
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 h-px bg-[#ECE7E1]" />
+            <span className="text-[11.5px] text-[#C4BDB5] font-medium uppercase tracking-[.06em]">
+              Informations sur les sources
+            </span>
+            <div className="flex-1 h-px bg-[#ECE7E1]" />
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
       <div
         className="bg-white rounded-[16px] border border-[#ECE7E1] p-[22px]"
         style={{ boxShadow: CARD_SHADOW }}
@@ -1090,6 +1189,167 @@ function VueVeille() {
             ou un formulaire de dépôt propriétaire. Les connecteurs de scraping vers
             Facebook/Leboncoin ne sont pas intégrés ici.
           </p>
+        </div>
+      </div>
+    </div>
+    </div>
+  );
+}
+
+// ── Carte annonce veille automatique (Supabase) ───────────────────────────────
+
+function CarteAnnonceVeille({
+  annonce,
+  recharger,
+  rechargerVeille,
+}: {
+  annonce: AnnonceParticulier;
+  recharger: () => void;
+  rechargerVeille: () => void;
+}) {
+  const [ouverte, setOuverte] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const Icon = iconPourType(annonce.corps_metier);
+
+  const dateFormatee = (() => {
+    const d = annonce.date_annonce ?? annonce.date_scraping;
+    try { return `Publié le ${format(parseISO(d), "d MMMM yyyy", { locale: fr })}`; }
+    catch { return ""; }
+  })();
+
+  async function handleImporter() {
+    setImporting(true);
+    try {
+      const nouvelle: AffaireCAPEB = {
+        id: crypto.randomUUID(),
+        dateAjout: new Date().toISOString(),
+        typesTravaux: annonce.corps_metier,
+        commune: annonce.ville ?? "",
+        codePostal: annonce.code_postal ?? (annonce.departement ? `${annonce.departement}000` : ""),
+        description: annonce.description ?? annonce.titre,
+        statut: "nouveau",
+        corpsMetierCible: annonce.corps_metier,
+        origine: "veille_publique",
+        sourceNom: sourceLabel(annonce.source),
+        sourceUrl: annonce.url_annonce,
+        sourceUrlType: annonce.url_type as "annonce_exacte" | "page_recherche",
+        validation: "a_valider",
+        contactConsigne: "Vérifier que la demande est toujours active et contacter uniquement via la plateforme source.",
+      };
+      saveAffaireCAPEB(nouvelle);
+      notifyUpdate();
+      recharger();
+      await supabase
+        .from("annonces_particuliers")
+        .update({ statut_import: "importe" })
+        .eq("id", annonce.id);
+      rechargerVeille();
+      toast.success("Annonce importée dans vos demandes");
+    } catch {
+      toast.error("Erreur lors de l'import");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function handleIgnorer() {
+    try {
+      await supabase
+        .from("annonces_particuliers")
+        .update({ statut_import: "ignore" })
+        .eq("id", annonce.id);
+      rechargerVeille();
+    } catch {
+      toast.error("Erreur");
+    }
+  }
+
+  return (
+    <div
+      className="bg-white rounded-[16px] overflow-hidden flex flex-col transition-all duration-150 hover:-translate-y-[2px]"
+      style={{ boxShadow: CARD_SHADOW, border: "1px solid #FFE0B2" }}
+    >
+      <div style={{ height: 5, background: "linear-gradient(90deg,#FF8F00,#E65100)", flexShrink: 0 }} />
+      <div className="p-[18px] flex-1 flex flex-col gap-[10px]">
+        <div className="flex items-center gap-[10px]">
+          <div
+            className="flex items-center justify-center rounded-[10px] shrink-0"
+            style={{ width: 36, height: 36, background: "#FFF8F0", border: "1px solid #FFE0B2" }}
+          >
+            <Icon className="h-4 w-4" style={{ color: "#E65100" }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-display text-[15px] font-semibold text-[#1A1714]">
+                {annonce.corps_metier}
+              </span>
+              <span
+                className="text-[10px] font-bold uppercase tracking-wide px-[7px] py-[2px] rounded-full"
+                style={{ background: "#FFF3E0", color: "#E65100" }}
+              >
+                Veille auto
+              </span>
+              <span
+                className="text-[10px] font-semibold px-[7px] py-[2px] rounded-full"
+                style={{ background: "#F5F2EE", color: "#8B847D" }}
+              >
+                {sourceLabel(annonce.source)}
+              </span>
+            </div>
+            <p className="text-[12px] text-[#8B847D] mt-[1px]">
+              {annonce.ville ?? "Localisation inconnue"}
+              {annonce.code_postal ? ` — ${annonce.code_postal}` : annonce.departement ? ` (${annonce.departement})` : ""}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-[13px] font-medium text-[#1A1714] leading-snug">{annonce.titre}</p>
+
+        {annonce.description && (
+          <p className={`text-[12.5px] text-[#4A453F] leading-relaxed ${ouverte ? "" : "line-clamp-2"}`}>
+            {annonce.description}
+          </p>
+        )}
+
+        <p className="text-[11.5px] text-[#8B847D]">{dateFormatee}</p>
+
+        <div className="flex items-center gap-[8px] mt-auto pt-[2px]">
+          <button
+            onClick={handleImporter}
+            disabled={importing}
+            className="flex-1 flex items-center justify-center gap-[6px] text-[12.5px] font-semibold text-white rounded-[9px] px-[13px] py-[9px] transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: "linear-gradient(180deg,#EA1227,#D2001A)", boxShadow: "0 3px 10px rgba(226,0,26,.3)" }}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {importing ? "Import…" : "Importer"}
+          </button>
+          <a
+            href={annonce.url_annonce}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-[5px] text-[12px] font-medium text-[#4A453F] rounded-[9px] px-[10px] py-[9px] border border-[#ECE7E1] hover:border-[#E2DCD4] transition-colors"
+            style={{ background: "#FAF8F5" }}
+            title={annonce.url_type === "annonce_exacte" ? "Voir l'annonce directe" : "Voir la page de recherche"}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          {annonce.description && (
+            <button
+              onClick={() => setOuverte((v) => !v)}
+              className="flex items-center gap-[5px] text-[12px] font-medium text-[#4A453F] rounded-[9px] px-[10px] py-[9px] border border-[#ECE7E1] hover:border-[#E2DCD4] transition-colors"
+              style={{ background: "#FAF8F5" }}
+            >
+              {ouverte ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          <button
+            onClick={handleIgnorer}
+            className="ml-auto flex items-center justify-center rounded-[9px] p-[9px] border border-[#ECE7E1] hover:border-[#F6CFCB] hover:bg-[#FDECEA] transition-colors"
+            style={{ background: "#FAF8F5" }}
+            title="Ignorer cette annonce"
+          >
+            <X className="h-3.5 w-3.5 text-[#8B847D]" />
+          </button>
         </div>
       </div>
     </div>

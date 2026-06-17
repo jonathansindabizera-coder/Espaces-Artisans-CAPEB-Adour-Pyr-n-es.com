@@ -321,6 +321,60 @@ export type Database = {
         }
         Relationships: []
       }
+      annonces_particuliers: {
+        Row: {
+          id: string
+          source: string
+          external_id: string
+          titre: string
+          description: string | null
+          ville: string | null
+          code_postal: string | null
+          departement: string | null
+          corps_metier: string
+          date_annonce: string | null
+          date_scraping: string
+          url_annonce: string
+          url_type: string
+          statut_import: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          source: string
+          external_id: string
+          titre: string
+          description?: string | null
+          ville?: string | null
+          code_postal?: string | null
+          departement?: string | null
+          corps_metier?: string
+          date_annonce?: string | null
+          date_scraping?: string
+          url_annonce: string
+          url_type?: string
+          statut_import?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          source?: string
+          external_id?: string
+          titre?: string
+          description?: string | null
+          ville?: string | null
+          code_postal?: string | null
+          departement?: string | null
+          corps_metier?: string
+          date_annonce?: string | null
+          date_scraping?: string
+          url_annonce?: string
+          url_type?: string
+          statut_import?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       pv: {
         Row: {
           chantier_id: string
