@@ -21,6 +21,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/tableau-de-bord": "Tableau de bord",
   "/bienvenue": "Bienvenue",
   "/pv": "PV & Devis",
+  "/documents": "Mes documents",
   "/planning": "Planning chantiers",
   "/affaires-capeb": "Demandes particuliers",
   "/formations": "Formations",

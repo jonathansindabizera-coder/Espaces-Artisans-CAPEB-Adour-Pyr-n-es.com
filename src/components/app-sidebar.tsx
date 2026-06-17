@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Landmark,
   Briefcase,
+  FolderOpen,
 } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useState, useEffect } from "react";
@@ -20,6 +21,7 @@ import { getAffairesCAPEB, DATA_EVENT } from "@/lib/local-data";
 const NAV_ITEMS = [
   { title: "Tableau de bord", url: "/tableau-de-bord", icon: LayoutDashboard },
   { title: "PV & Suivi devis", url: "/pv", icon: FileSignature },
+  { title: "Mes documents", url: "/documents", icon: FolderOpen },
   { title: "Planning chantiers", url: "/planning", icon: Calendar },
   { title: "RH & Juridique", url: "/rh", icon: Users },
   { title: "Marchés porteurs", url: "/marches-porteurs", icon: TrendingUp },

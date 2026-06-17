@@ -17,12 +17,13 @@ import { Route as AuthenticatedServicesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRhRouteImport } from './routes/_authenticated/rh'
 import { Route as AuthenticatedPvRouteImport } from './routes/_authenticated/pv'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
-import { Route as AuthenticatedAffairesCAPEBRouteImport } from './routes/_authenticated/affaires-capeb'
 import { Route as AuthenticatedMarchesPublicsRouteImport } from './routes/_authenticated/marches-publics'
 import { Route as AuthenticatedMarchesPorteursRouteImport } from './routes/_authenticated/marches-porteurs'
 import { Route as AuthenticatedFormationsRouteImport } from './routes/_authenticated/formations'
+import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedBienvenueRouteImport } from './routes/_authenticated/bienvenue'
 import { Route as AuthenticatedAvantagesRouteImport } from './routes/_authenticated/avantages'
+import { Route as AuthenticatedAffairesCapebRouteImport } from './routes/_authenticated/affaires-capeb'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -64,11 +65,6 @@ const AuthenticatedPlanningRoute = AuthenticatedPlanningRouteImport.update({
   path: '/planning',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAffairesCAPEBRoute = AuthenticatedAffairesCAPEBRouteImport.update({
-  id: '/affaires-capeb',
-  path: '/affaires-capeb',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedMarchesPublicsRoute =
   AuthenticatedMarchesPublicsRouteImport.update({
     id: '/marches-publics',
@@ -86,6 +82,11 @@ const AuthenticatedFormationsRoute = AuthenticatedFormationsRouteImport.update({
   path: '/formations',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDocumentsRoute = AuthenticatedDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBienvenueRoute = AuthenticatedBienvenueRouteImport.update({
   id: '/bienvenue',
   path: '/bienvenue',
@@ -96,13 +97,20 @@ const AuthenticatedAvantagesRoute = AuthenticatedAvantagesRouteImport.update({
   path: '/avantages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAffairesCapebRoute =
+  AuthenticatedAffairesCapebRouteImport.update({
+    id: '/affaires-capeb',
+    path: '/affaires-capeb',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/affaires-capeb': typeof AuthenticatedAffairesCAPEBRoute
+  '/affaires-capeb': typeof AuthenticatedAffairesCapebRoute
   '/avantages': typeof AuthenticatedAvantagesRoute
   '/bienvenue': typeof AuthenticatedBienvenueRoute
+  '/documents': typeof AuthenticatedDocumentsRoute
   '/formations': typeof AuthenticatedFormationsRoute
   '/marches-porteurs': typeof AuthenticatedMarchesPorteursRoute
   '/marches-publics': typeof AuthenticatedMarchesPublicsRoute
@@ -115,9 +123,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/affaires-capeb': typeof AuthenticatedAffairesCAPEBRoute
+  '/affaires-capeb': typeof AuthenticatedAffairesCapebRoute
   '/avantages': typeof AuthenticatedAvantagesRoute
   '/bienvenue': typeof AuthenticatedBienvenueRoute
+  '/documents': typeof AuthenticatedDocumentsRoute
   '/formations': typeof AuthenticatedFormationsRoute
   '/marches-porteurs': typeof AuthenticatedMarchesPorteursRoute
   '/marches-publics': typeof AuthenticatedMarchesPublicsRoute
@@ -132,9 +141,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/affaires-capeb': typeof AuthenticatedAffairesCAPEBRoute
+  '/_authenticated/affaires-capeb': typeof AuthenticatedAffairesCapebRoute
   '/_authenticated/avantages': typeof AuthenticatedAvantagesRoute
   '/_authenticated/bienvenue': typeof AuthenticatedBienvenueRoute
+  '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
   '/_authenticated/formations': typeof AuthenticatedFormationsRoute
   '/_authenticated/marches-porteurs': typeof AuthenticatedMarchesPorteursRoute
   '/_authenticated/marches-publics': typeof AuthenticatedMarchesPublicsRoute
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/affaires-capeb'
     | '/avantages'
     | '/bienvenue'
+    | '/documents'
     | '/formations'
     | '/marches-porteurs'
     | '/marches-publics'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/affaires-capeb'
     | '/avantages'
     | '/bienvenue'
+    | '/documents'
     | '/formations'
     | '/marches-porteurs'
     | '/marches-publics'
@@ -183,6 +195,7 @@ export interface FileRouteTypes {
     | '/_authenticated/affaires-capeb'
     | '/_authenticated/avantages'
     | '/_authenticated/bienvenue'
+    | '/_authenticated/documents'
     | '/_authenticated/formations'
     | '/_authenticated/marches-porteurs'
     | '/_authenticated/marches-publics'
@@ -278,18 +291,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documents': {
+      id: '/_authenticated/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof AuthenticatedDocumentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/bienvenue': {
       id: '/_authenticated/bienvenue'
       path: '/bienvenue'
       fullPath: '/bienvenue'
       preLoaderRoute: typeof AuthenticatedBienvenueRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/affaires-capeb': {
-      id: '/_authenticated/affaires-capeb'
-      path: '/affaires-capeb'
-      fullPath: '/affaires-capeb'
-      preLoaderRoute: typeof AuthenticatedAffairesCAPEBRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/avantages': {
@@ -299,13 +312,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAvantagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/affaires-capeb': {
+      id: '/_authenticated/affaires-capeb'
+      path: '/affaires-capeb'
+      fullPath: '/affaires-capeb'
+      preLoaderRoute: typeof AuthenticatedAffairesCapebRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAffairesCAPEBRoute: typeof AuthenticatedAffairesCAPEBRoute
+  AuthenticatedAffairesCapebRoute: typeof AuthenticatedAffairesCapebRoute
   AuthenticatedAvantagesRoute: typeof AuthenticatedAvantagesRoute
   AuthenticatedBienvenueRoute: typeof AuthenticatedBienvenueRoute
+  AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
   AuthenticatedFormationsRoute: typeof AuthenticatedFormationsRoute
   AuthenticatedMarchesPorteursRoute: typeof AuthenticatedMarchesPorteursRoute
   AuthenticatedMarchesPublicsRoute: typeof AuthenticatedMarchesPublicsRoute
@@ -317,9 +338,10 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAffairesCAPEBRoute: AuthenticatedAffairesCAPEBRoute,
+  AuthenticatedAffairesCapebRoute: AuthenticatedAffairesCapebRoute,
   AuthenticatedAvantagesRoute: AuthenticatedAvantagesRoute,
   AuthenticatedBienvenueRoute: AuthenticatedBienvenueRoute,
+  AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
   AuthenticatedFormationsRoute: AuthenticatedFormationsRoute,
   AuthenticatedMarchesPorteursRoute: AuthenticatedMarchesPorteursRoute,
   AuthenticatedMarchesPublicsRoute: AuthenticatedMarchesPublicsRoute,
